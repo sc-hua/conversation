@@ -1,6 +1,6 @@
 # Add for project
-conversations
-export
+*logs/
+export/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

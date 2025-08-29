@@ -268,7 +268,7 @@ content = create_mixed_content(
 OPENAI_API_KEY=your_api_key_here
 
 # 对话保存路径
-CONVERSATION_SAVE_PATH=./conversations
+CONVERSATION_SAVE_PATH=./conv_logs
 
 # 并发限制
 MAX_CONCURRENT_CONVERSATIONS=5
@@ -314,7 +314,7 @@ graph = ConversationGraph(max_concurrent=10)
 ```
 
 ### Q: 对话数据如何备份？
-A: 每个对话都会自动保存到 `./conversations/` 目录下的JSON文件，文件名格式为 `conversation_{id}_{timestamp}.json`
+A: 每个对话都会自动保存到 `./conv_logs/` 目录下的JSON文件，文件名格式为 `conversation_{id}_{timestamp}.json`
 
 </details>
 

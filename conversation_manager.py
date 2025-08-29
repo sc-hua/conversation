@@ -25,7 +25,7 @@ class ConversationManager:
         save_path: 保存对话文件的目录
     """
     
-    def __init__(self, save_path: str = "./conversations"):
+    def __init__(self, save_path: str = "./conv_logs"):
         """
         初始化对话管理器。
         

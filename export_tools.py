@@ -17,7 +17,7 @@ from models import ConversationHistory, Message, StructuredMessageContent, Conte
 class MultimodalExporter:
     """多模态对话记录导出器"""
     
-    def __init__(self, conversations_dir: str = "./conversations"):
+    def __init__(self, conversations_dir: str = "./conv_logs"):
         """
         初始化导出器
         
