@@ -11,19 +11,23 @@ import os
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from dotenv import load_dotenv
 from models import ConversationHistory, Message, StructuredMessageContent, ContentBlock
+
+load_dotenv()
 
 
 class MultimodalExporter:
     """多模态对话记录导出器"""
     
-    def __init__(self, conversations_dir: str = "./conv_logs"):
+    def __init__(self, conversations_dir: str = None):
         """
         初始化导出器
         
         Args:
             conversations_dir: 对话记录目录
         """
+        conversations_dir = conversations_dir or os.getenv("CONVERSATIONS_DIR")
         self.conversations_dir = Path(conversations_dir)
         
     def load_conversation(self, conversation_file: str) -> Optional[ConversationHistory]:

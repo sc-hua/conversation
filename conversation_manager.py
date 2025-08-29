@@ -6,11 +6,15 @@
 """
 
 import json
+import os
 import aiofiles
 from pathlib import Path
 from typing import Dict, List
 from datetime import datetime
+from dotenv import load_dotenv
 from models import Message, StructuredMessageContent
+
+load_dotenv()
 
 
 class ConversationManager:
@@ -25,13 +29,14 @@ class ConversationManager:
         save_path: 保存对话文件的目录
     """
     
-    def __init__(self, save_path: str = "./conv_logs"):
+    def __init__(self, save_path: str = None):
         """
         初始化对话管理器。
         
         参数:
             save_path: 保存对话文件的目录路径
         """
+        save_path = save_path or os.getenv("CONVERSATION_SAVE_PATH")
         self.conversations: Dict[str, List[Message]] = {}
         self.save_path = Path(save_path)
         self.save_path.mkdir(exist_ok=True)

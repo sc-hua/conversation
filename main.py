@@ -8,10 +8,14 @@
 import asyncio
 import json
 from datetime import datetime
+import os
+from dotenv import load_dotenv
 from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass, field
 from pathlib import Path
 import uuid
+
+load_dotenv()
 
 
 @dataclass
@@ -145,7 +149,7 @@ class StandaloneConversationManager:
         save_path: 保存对话文件的目录
     """
     
-    def __init__(self, save_path: str = "./conv_logs"):
+    def __init__(self, save_path: str = None):
         """
         初始化对话管理器。
 
@@ -153,7 +157,7 @@ class StandaloneConversationManager:
             save_path: 保存对话文件的目录路径
         """
         self.conversations: Dict[str, List[Message]] = {}
-        self.save_path = Path(save_path)
+        self.save_path = Path(save_path or os.getenv("CONVERSATION_SAVE_PATH"))
         self.save_path.mkdir(exist_ok=True)
     
     def save_message(self, conversation_id: str, message: Message) -> None:
