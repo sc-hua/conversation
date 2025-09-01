@@ -29,12 +29,12 @@ class ConversationGraph:
         semaphore: 并发信号量
     """
 
-    def __init__(self, max_concurrent=5, llm_type=None):
+    def __init__(self, max_concurrent: int = 5, llm_type: str = None):
         self.llm = create_llm(llm_type)
         self.conversation_manager = ConversationManager()
         self.semaphore = asyncio.Semaphore(max_concurrent)
 
-    async def _process_input(self, state):
+    async def _process_input(self, state: ConversationState) -> ConversationState:
         """
         加载历史，必要时添加系统提示。
         参数 / 返回: state: ConversationState
@@ -51,7 +51,7 @@ class ConversationGraph:
             self.conversation_manager.save_message(state.conversation_id, system_msg)
         return state
 
-    async def _generate_response(self, state):
+    async def _generate_response(self, state: ConversationState) -> ConversationState:
         """
         用LLM生成AI回复。
         参数 / 返回: state: ConversationState
@@ -61,7 +61,7 @@ class ConversationGraph:
             state.response = response
         return state
 
-    async def _save_history(self, state):
+    async def _save_history(self, state: ConversationState) -> ConversationState:
         """
         保存用户输入和AI回复到历史。
         参数 / 返回: state: ConversationState
@@ -80,10 +80,10 @@ class ConversationGraph:
         return state
 
     async def chat(self,
-                   conversation_id=None,
-                   system_prompt=None,
-                   structured_content=None,
-                   is_final=False):
+                   conversation_id: Optional[str] = None,
+                   system_prompt: Optional[str] = None,
+                   structured_content: Optional[StructuredMessageContent] = None,
+                   is_final: bool = False) -> Dict[str, Any]:
         """
         主聊天接口，支持结构化内容。
         参数:

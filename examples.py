@@ -12,7 +12,7 @@ class ConversationBuilder:
         """初始化 ConversationGraph 实例。"""
         self.graph = ConversationGraph()
     
-    async def create_data_analysis_conversation(self):
+    async def create_data_analysis_conversation(self) -> str:
         """示例：创建一轮数据分析对话并返回 conversation_id。"""
         print("📊 创建数据分析对话...")
         
@@ -65,7 +65,7 @@ class ConversationBuilder:
         print(f"最终建议: {result2['response']}")
         return conversation_id
     
-    async def create_product_presentation(self):
+    async def create_product_presentation(self) -> str:
         """示例：创建产品演示对话并返回 conversation_id。"""
         print("🚀 创建产品演示...")
         presentation_content = StructuredMessageContent.from_mixed_items(

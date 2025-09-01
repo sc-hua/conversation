@@ -26,13 +26,13 @@ class ConversationManager:
         save_path: 文件保存目录
     """
 
-    def __init__(self, save_path=None):
+    def __init__(self, save_path: str = None):
         save_path = save_path or os.getenv("CONVERSATION_SAVE_PATH")
         self.conversations: Dict[str, List[Message]] = {}
         self.save_path = Path(save_path)
         self.save_path.mkdir(exist_ok=True)
 
-    def save_message(self, conversation_id, message):
+    def save_message(self, conversation_id: str, message: Message) -> None:
         """
         保存单条消息到内存。
         conversation_id: 对话 ID
@@ -42,7 +42,7 @@ class ConversationManager:
             self.conversations[conversation_id] = []
         self.conversations[conversation_id].append(message)
 
-    def get_conversation_history(self, conversation_id):
+    def get_conversation_history(self, conversation_id: str) -> List[Message]:
         """
         根据对话 ID 获取对话历史。
         conversation_id: 对话 ID
@@ -50,7 +50,7 @@ class ConversationManager:
         """
         return self.conversations.get(conversation_id, [])
 
-    async def save_conversation_to_file(self, conversation_id):
+    async def save_conversation_to_file(self, conversation_id: str) -> str:
         """
         持久化对话到 JSON 文件。
         conversation_id: 对话 ID
@@ -92,7 +92,7 @@ class ConversationManager:
             await f.write(json.dumps(conversation_data, indent=2, ensure_ascii=False))
         return str(filepath)
 
-    def cleanup_memory(self, conversation_id):
+    def cleanup_memory(self, conversation_id: str) -> None:
         """
         清理内存中的对话。
         conversation_id: 对话 ID
