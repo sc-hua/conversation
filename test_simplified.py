@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """测试简化后的模型功能。"""
 
-from models import ContentBlock, StructuredMessageContent
+from modules import ContentBlock, StructuredMessageContent
 
 def test_simplified_models():
     """测试简化后的模型。"""

@@ -7,7 +7,7 @@
 
 import asyncio
 from typing import Dict, Optional, Any
-from models import ConversationState, Message, StructuredMessageContent
+from modules import ConversationState, Message, StructuredMessageContent
 from conversation_manager import ConversationManager
 from llm import create_llm
 from dotenv import load_dotenv

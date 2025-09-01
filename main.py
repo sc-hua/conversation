@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any
 from dotenv import load_dotenv
 
 # 使用现有模块，避免重复定义
-from models import Message, StructuredMessageContent
+from modules import Message, StructuredMessageContent
 from conversation_manager import ConversationManager
 
 load_dotenv()

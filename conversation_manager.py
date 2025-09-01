@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, List
 from datetime import datetime
 from dotenv import load_dotenv
-from models import Message, StructuredMessageContent
+from modules import Message, StructuredMessageContent
 
 load_dotenv()
 

@@ -2,7 +2,7 @@
 
 import asyncio
 from conversation_graph import ConversationGraph
-from models import StructuredMessageContent
+from modules import StructuredMessageContent
 
 
 class ConversationBuilder:

@@ -5,7 +5,7 @@ import json
 import os
 from typing import Dict, List
 from abc import ABC, abstractmethod
-from models import Message, StructuredMessageContent
+from modules import Message, StructuredMessageContent
 
 
 class BaseLLM(ABC):

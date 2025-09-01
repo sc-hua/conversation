@@ -9,7 +9,7 @@ with different configurations.
 import asyncio
 import os
 from dotenv import load_dotenv
-from models import StructuredMessageContent
+from modules import StructuredMessageContent
 from llm import create_llm
 
 # Load environment variables

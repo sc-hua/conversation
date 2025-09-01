@@ -9,7 +9,7 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from conversation_graph import ConversationGraph
-from models import StructuredMessageContent
+from modules import StructuredMessageContent
 
 # Load environment variables
 load_dotenv()

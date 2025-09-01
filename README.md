@@ -55,7 +55,7 @@ await graph.chat(structured_content=content)
 ```
 process_data/
 ├── main.py                    # 🔥 零依赖独立版本（推荐入门）
-├── models.py                  # 数据模型定义
+├── modules.py                 # 数据模型定义
 ├── conversation_manager.py    # 对话管理和文件持久化
 ├── conversation_graph.py      # LangGraph工作流核心
 ├── examples.py                # 使用示例和工具函数

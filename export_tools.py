@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from dotenv import load_dotenv
-from models import ConversationHistory, Message, StructuredMessageContent, ContentBlock
+from modules import ConversationHistory, Message, StructuredMessageContent, ContentBlock
 
 load_dotenv()
 
