@@ -39,14 +39,14 @@ async def test_ollama_conversation():
     # Test 2: Structured content with JSON
     print("\n2️⃣ Structured content with JSON:")
     structured_content = StructuredMessageContent()
-    structured_content.add_text("请分析以下数据：", position=0)
+    structured_content.add_text("请分析以下数据：")
     structured_content.add_json({
-        "product": "智能手机",
-        "sales": 1500,
-        "month": "8月",
-        "growth": "+12%"
-    }, position=1)
-    structured_content.add_text("这些销售数据表现如何？", position=2)
+        "销售额": 150000,
+        "客户数": 245,
+        "增长率": "15%",
+        "地区": "华东"
+    })
+    structured_content.add_text("这些销售数据表现如何？")
     
     result2 = await graph.chat(
         conversation_id=result1['conversation_id'],  # Continue same conversation
@@ -59,14 +59,14 @@ async def test_ollama_conversation():
     # Test 3: Multi-modal with image reference
     print("\n3️⃣ Multi-modal content:")
     multimodal_content = StructuredMessageContent()
-    multimodal_content.add_text("我有一张图片和数据需要分析", position=0)
-    multimodal_content.add_image("data_chart.png", position=1)
+    multimodal_content.add_text("我有一张图片和数据需要分析")
+    multimodal_content.add_image("data_chart.png")
     multimodal_content.add_json({
-        "chart_type": "柱状图",
-        "data_points": 24,
-        "trend": "上升"
-    }, position=2)
-    multimodal_content.add_text("请综合分析图片和数据", position=3)
+        "图片类型": "数据图表",
+        "数据点": 12,
+        "趋势": "上升"
+    })
+    multimodal_content.add_text("请综合分析图片和数据")
     
     result3 = await graph.chat(
         conversation_id=result1['conversation_id'],

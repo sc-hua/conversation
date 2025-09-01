@@ -1,9 +1,4 @@
-"""
-Language Model 实现，用于对话系统。
-
-支持多个 LLM 提供者：Mock、Ollama 和 OpenAI。
-基于配置驱动并支持环境变量。
-"""
+"""LLM 集成：提供 Mock、Ollama、OpenAI 的轻量封装。"""
 
 import asyncio
 import json
@@ -14,13 +9,13 @@ from models import Message, StructuredMessageContent
 
 
 class BaseLLM(ABC):
-    """所有 LLM 实现的基类。"""
-    
+    """LLM 抽象基类。实现类需实现 generate_response。"""
+
     @abstractmethod
     async def generate_response(self, messages: List[Message], 
                               current_input: StructuredMessageContent) -> str:
-        """基于对话历史和当前输入生成响应。"""
-        pass
+        """根据消息历史和当前结构化输入返回文本回复。"""
+        raise NotImplementedError()
 
 
 class OllamaLLM(BaseLLM):
@@ -31,21 +26,14 @@ class OllamaLLM(BaseLLM):
     """
     
     def __init__(self, model: str = None, base_url: str = None, timeout: int = None):
-        """
-        初始化 Ollama LLM，支持配置参数。
-
-        参数:
-            model: 模型名称（默认来自环境变量 OLLAMA_MODEL 或 qwen2.5vl:3b）
-            base_url: Ollama API 地址（默认来自环境变量 OLLAMA_BASE_URL 或本地地址）
-            timeout: 请求超时时间（默认来自环境变量 OLLAMA_TIMEOUT 或 30 秒）
-        """
+        """初始化 Ollama 集成；model/base_url/timeout 可由环境变量覆盖。"""
         self.base_url = base_url or os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
         self.model = model or os.getenv('OLLAMA_MODEL', 'qwen2.5vl:3b')
         self.timeout = timeout or int(os.getenv('OLLAMA_TIMEOUT', '30'))
     
     def _convert_to_ollama_messages(self, messages: List[Message], 
                                    current_input: StructuredMessageContent) -> List[Dict]:
-        """将结构化内容转换为 Ollama 可接受的格式。"""
+        """将历史消息与结构化输入序列化为 Ollama 可用的消息列表。"""
         ollama_messages = []
         
         # Convert previous messages
@@ -81,7 +69,7 @@ class OllamaLLM(BaseLLM):
     
     async def generate_response(self, messages: List[Message], 
                               current_input: StructuredMessageContent) -> str:
-        """使用 Ollama API 生成响应。"""
+        """调用 Ollama 接口返回文本响应（异步）。"""
         try:
             import aiohttp
             
@@ -114,7 +102,7 @@ class OllamaLLM(BaseLLM):
     
     async def _generate_response_sync(self, messages: List[Message], 
                                     current_input: StructuredMessageContent) -> str:
-        """使用 requests 的后备同步实现。"""
+        """在缺少 aiohttp 时，使用 requests 的后备实现（仍包装为协程）。"""
         try:
             import requests
             
@@ -153,15 +141,7 @@ class OpenAILLM(BaseLLM):
     
     def __init__(self, model: str = None, api_key: str = None, 
                  base_url: str = None, timeout: int = None):
-        """
-        初始化 OpenAI LLM，支持配置参数。
-
-        参数:
-            model: 模型名称（默认来自环境变量 OPENAI_MODEL 或 gpt-3.5-turbo）
-            api_key: API 密钥（默认来自环境变量 OPENAI_API_KEY）
-            base_url: API 基础地址（默认来自环境变量 OPENAI_BASE_URL）
-            timeout: 请求超时时间（默认来自环境变量 OPENAI_TIMEOUT 或 30 秒）
-        """
+        """初始化 OpenAI 集成；需要提供或设置 OPENAI_API_KEY。"""
         self.model = model or os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
         self.api_key = api_key or os.getenv('OPENAI_API_KEY')
         self.base_url = base_url or os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
@@ -172,7 +152,7 @@ class OpenAILLM(BaseLLM):
     
     def _convert_to_openai_messages(self, messages: List[Message], 
                                    current_input: StructuredMessageContent) -> List[Dict]:
-        """将结构化内容转换为 OpenAI 可接受的消息格式。"""
+        """把历史消息和结构化输入转换为 OpenAI API 可用格式。"""
         openai_messages = []
         
         # Convert previous messages
@@ -214,7 +194,7 @@ class OpenAILLM(BaseLLM):
     
     async def generate_response(self, messages: List[Message], 
                               current_input: StructuredMessageContent) -> str:
-        """使用 OpenAI API 生成响应。"""
+        """调用 OpenAI 接口并返回文本响应（异步）。"""
         try:
             import aiohttp
             
@@ -259,29 +239,22 @@ class MockLLM(BaseLLM):
     
     async def generate_response(self, messages: List[Message], 
                               current_input: StructuredMessageContent) -> str:
-        """
-        Generate mock response based on structured input.
-        
-        Analyzes input content blocks in specified order
-        and generates contextual response.
-        """
+        """基于结构化输入生成模拟回复（用于测试，无外部依赖）。"""
         await asyncio.sleep(0.1)  # Simulate API delay
         
         responses = ["我按指定顺序分析了您的内容："]
         
-        # Process each block in position order
-        for block in current_input.blocks:
-            position_text = f"位置 {block.position}"
-            
+        # 处理每个内容块，按顺序
+        for i, block in enumerate(current_input.blocks):
+            block_desc = f"第{i+1}项"
+
             if block.type == "text":
-                responses.append(f"{position_text}: 文本内容 - {block.content}")
+                responses.append(f"{block_desc}: 文本内容 - {block.content}")
             elif block.type == "image":
-                responses.append(f"{position_text}: 图片文件 - {block.content}")
+                responses.append(f"{block_desc}: 图片文件 - {block.content}")
             elif block.type == "json":
                 key_count = len(block.content) if isinstance(block.content, dict) else 0
-                responses.append(f"{position_text}: 包含 {key_count} 个字段的JSON数据")
-        
-        # Add conversation context
+                responses.append(f"{block_desc}: 包含 {key_count} 个字段的JSON数据")        # Add conversation context
         user_messages = [msg for msg in messages if msg.role == "user"]
         if len(user_messages) > 0:
             responses.append(f"这是我们对话中的第 #{len(user_messages) + 1} 次交互。")
@@ -290,23 +263,12 @@ class MockLLM(BaseLLM):
     
 
 def create_llm(llm_type: str = None, **kwargs) -> BaseLLM:
-    """
-    工厂函数：根据配置创建 LLM 实例。
-
-    参数:
-        llm_type: LLM 类型（'mock'、'ollama'、'openai'）
-        **kwargs: 传递给 LLM 初始化的额外参数
-
-    返回:
-        已初始化的 LLM 实例
-    """
-    llm_type = llm_type or os.getenv('LLM_TYPE', 'mock').lower()
-    
+    """根据 llm_type 返回相应的 LLM 实例（默认为 mock）。"""
+    llm_type = (llm_type or os.getenv('LLM_TYPE', 'mock')).lower()
     if llm_type == 'mock':
         return MockLLM()
-    elif llm_type == 'ollama':
+    if llm_type == 'ollama':
         return OllamaLLM(**kwargs)
-    elif llm_type == 'openai':
+    if llm_type in ['openai', 'oai']:
         return OpenAILLM(**kwargs)
-    else:
-        raise ValueError(f"Unsupported LLM type: {llm_type}")
+    raise ValueError(f"Unsupported LLM type: {llm_type}")

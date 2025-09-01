@@ -8,54 +8,159 @@ import json
 
 
 class ContentBlock(BaseModel):
-    """单个内容块：text/image/json，含位置索引。"""
+    """单个内容块：text/image/json，支持自定义扩展字段。"""
     type: str = Field(..., description="类型: text|image|json")
     content: Any = Field(..., description="内容")
-    position: int = Field(default=0, description="位置索引，默认为 0")
+    extras: Optional[Dict[str, Any]] = Field(default_factory=dict, description="自定义扩展字段")
+    
+    class Config:
+        # 禁止额外字段，统一收集到 extras 中
+        extra = "forbid"
+    
+    def __init__(self, **data):
+        """支持 **kwargs 传入自定义字段，自动收集到 extras 中。"""
+        # 提取标准字段
+        standard_fields = {'type', 'content', 'extras'}
+        standard_data = {k: v for k, v in data.items() if k in standard_fields}
+        
+        # 其余字段作为 extras
+        extra_data = {k: v for k, v in data.items() if k not in standard_fields}
+        if extra_data:
+            existing_extras = standard_data.get('extras', {})
+            standard_data['extras'] = {**existing_extras, **extra_data}
+        
+        super().__init__(**standard_data)
+    
+    def get_extra(self, key: str, default=None):
+        """获取自定义字段值。"""
+        return self.extras.get(key, default) if self.extras else default
+    
+    def set_extra(self, key: str, value: Any):
+        """设置自定义字段值。"""
+        if self.extras is None:
+            self.extras = {}
+        self.extras[key] = value
+    
+    def has_extra(self, key: str) -> bool:
+        """检查是否存在指定的自定义字段。"""
+        return bool(self.extras and key in self.extras)
 
 
 class StructuredMessageContent(BaseModel):
     """有序内容块集合，支持添加文本/图片/JSON。"""
     blocks: List[ContentBlock] = Field(default_factory=list, description="内容块列表")
 
-    def add_text(self, text: str, position: int | None = None) -> "StructuredMessageContent":
-        """添加文本块（可选位置）。"""
-        pos = position if position is not None else len(self.blocks)
-        self.blocks.append(ContentBlock(type="text", content=text, position=pos))
-        self._sort_blocks()
+    def add_text(self, text: str, **kwargs) -> "StructuredMessageContent":
+        """添加文本块到末尾。"""
+        self.blocks.append(ContentBlock(type="text", content=text, **kwargs))
         return self
 
-    def add_image(self, image_url: str, position: int | None = None) -> "StructuredMessageContent":
-        """添加图片块（可选位置）。
+    def add_image(self, image_url: str, **kwargs) -> "StructuredMessageContent":
+        """添加图片块到末尾。
             - image_url: 图片的 URL 地址或者 base64 编码字符串
-            - position: 插入位置（如果为 None，默认为末尾）"""
-        pos = position if position is not None else len(self.blocks)
-        self.blocks.append(ContentBlock(type="image", content=image_url, position=pos))
-        self._sort_blocks()
+            - **kwargs: 自定义字段，如 alt_text, width, height 等"""
+        self.blocks.append(ContentBlock(type="image", content=image_url, **kwargs))
         return self
 
-    def add_json(self, json_data: Dict[str, Any], position: int | None = None) -> "StructuredMessageContent":
-        """添加 JSON 块（可选位置）。
+    def add_json(self, json_data: Dict[str, Any], **kwargs) -> "StructuredMessageContent":
+        """添加 JSON 块到末尾。
             - json_data: JSON 数据
-            - position: 插入位置（如果为 None，默认为末尾）"""
-        pos = position if position is not None else len(self.blocks)
-        self.blocks.append(ContentBlock(type="json", content=json_data, position=pos))
-        self._sort_blocks()
+            - **kwargs: 自定义字段，如 schema, validator 等"""
+        self.blocks.append(ContentBlock(type="json", content=json_data, **kwargs))
+        return self
+    
+    def insert_text(self, index: int, text: str, **kwargs) -> "StructuredMessageContent":
+        """在指定位置插入文本块。"""
+        self.blocks.insert(index, ContentBlock(type="text", content=text, **kwargs))
+        return self
+    
+    def insert_image(self, index: int, image_url: str, **kwargs) -> "StructuredMessageContent":
+        """在指定位置插入图片块。"""
+        self.blocks.insert(index, ContentBlock(type="image", content=image_url, **kwargs))
+        return self
+    
+    def insert_json(self, index: int, json_data: Dict[str, Any], **kwargs) -> "StructuredMessageContent":
+        """在指定位置插入 JSON 块。"""
+        self.blocks.insert(index, ContentBlock(type="json", content=json_data, **kwargs))
         return self
 
-    def _sort_blocks(self) -> None:
-        self.blocks.sort(key=lambda x: x.position)
+    @classmethod
+    def from_mixed_items(cls, *items) -> "StructuredMessageContent":
+        """工厂方法：从混合项构建内容，按传入顺序排列。
+        
+        支持输入类型：
+        - str: 文本内容
+        - {'image': 'url'}: 图片
+        - {'json': data}: JSON数据
+        - (content, extras_dict): 内容和自定义字段
+        
+        示例:
+            content = StructuredMessageContent.from_mixed_items(
+                "开始文本",
+                {'image': 'chart.png'},
+                {'json': {'data': 123}},
+                ("结束文本", {'style': 'bold'})  # 带自定义字段
+            )
+        """
+        content = cls()
+        
+        for item in items:
+            if isinstance(item, tuple):
+                # 带自定义字段的项目
+                if len(item) == 2:
+                    data, extras = item
+                    extras = extras or {}
+                else:
+                    raise ValueError(f"元组参数格式错误，应为 (content, extras_dict): {item}")
+                
+                if isinstance(data, str):
+                    content.add_text(data, **extras)
+                elif isinstance(data, dict):
+                    if 'image' in data:
+                        content.add_image(data['image'], **extras)
+                    elif 'json' in data:
+                        content.add_json(data['json'], **extras)
+                    else:
+                        content.add_json(data, **extras)  # 默认作为JSON处理
+            else:
+                # 普通项目，按顺序添加
+                if isinstance(item, str):
+                    content.add_text(item)
+                elif isinstance(item, dict):
+                    if 'image' in item:
+                        content.add_image(item['image'])
+                    elif 'json' in item:
+                        content.add_json(item['json'])
+                    else:
+                        content.add_json(item)  # 默认作为JSON处理
+        
+        return content
 
     def to_display_text(self) -> str:
-        """把所有块合并为可读字符串。"""
+        """把所有块合并为可读字符串，可选择显示自定义字段信息。"""
         parts: List[str] = []
         for block in self.blocks:
             if block.type == "text":
-                parts.append(str(block.content))
+                text = str(block.content)
+                # 如果有样式信息，可以在显示时体现
+                if block.has_extra('style'):
+                    style = block.get_extra('style')
+                    text = f"[{style}]{text}[/{style}]" if style in ['bold', 'italic'] else text
+                parts.append(text)
             elif block.type == "image":
-                parts.append(f"[图片: {block.content}]")
+                img_text = f"[图片: {block.content}]"
+                # 显示图片描述信息
+                if block.has_extra('alt_text'):
+                    img_text = f"[图片: {block.content} - {block.get_extra('alt_text')}]"
+                elif block.has_extra('caption'):
+                    img_text = f"[图片: {block.content} - {block.get_extra('caption')}]"
+                parts.append(img_text)
             elif block.type == "json":
-                parts.append(f"[JSON: {json.dumps(block.content, ensure_ascii=False)}]")
+                json_text = f"[JSON: {json.dumps(block.content, ensure_ascii=False)}]"
+                # 显示JSON源信息
+                if block.has_extra('source'):
+                    json_text = f"[JSON({block.get_extra('source')}): {json.dumps(block.content, ensure_ascii=False)}]"
+                parts.append(json_text)
         return " ".join(parts)
 
 

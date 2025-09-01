@@ -58,14 +58,14 @@ async def test_memory_capability():
     
     # 第三轮：提供复杂数据
     content3 = StructuredMessageContent()
-    content3.add_text("以下是我的项目数据：", position=0)
+    content3.add_text("以下是我的项目数据：")
     content3.add_json({
-        "project_name": "智能对话系统",
-        "completion": 75,
-        "team_size": 5,
-        "deadline": "2024年12月"
-    }, position=1)
-    content3.add_text("请分析这个项目的状态。", position=2)
+        "项目名": "AI助手开发",
+        "进度": "75%",
+        "团队": 8,
+        "预算": "150万"
+    })
+    content3.add_text("请分析这个项目的状态。")
     
     result3 = await graph.chat(
         conversation_id=result1['conversation_id'],
@@ -99,7 +99,7 @@ async def test_memory_capability():
     
     # 第五轮：多模态输入
     content5 = StructuredMessageContent()
-    content5.add_text("我刚刚拍了一张我的工作桌照片", position=0)
+    content5.add_text("我刚刚拍了一张我的工作桌照片")
     content5.add_image("workspace_photo.jpg", position=1)
     content5.add_text("桌子上有我的笔记本电脑和咖啡杯", position=2)
     
