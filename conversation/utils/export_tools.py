@@ -5,16 +5,12 @@
 将对话记录转换为 LLaMA-Factory 兼容的多模态格式，
 支持图片、音频、视频等多种模态内容。
 """
-
 import json
 import os
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-from dotenv import load_dotenv
-from modules import ConversationHistory, Message, StructuredMessageContent, ContentBlock
-
-load_dotenv()
+from ..core.modules import ConversationHistory, Message, Content, ContentBlock
 
 
 class MultimodalExporter:
@@ -42,7 +38,7 @@ class MultimodalExporter:
             for msg_data in data.get('messages', []):
                 if isinstance(msg_data['content'], dict) and 'blocks' in msg_data['content']:
                     # 结构化内容
-                    content = StructuredMessageContent()
+                    content = Content()
                     for block in msg_data['content']['blocks']:
                         content.blocks.append(ContentBlock(
                             type=block['type'],
@@ -114,7 +110,7 @@ class MultimodalExporter:
         current_media_files = {'images': [], 'audios': [], 'videos': []}
         
         for i, message in enumerate(user_assistant_messages):
-            if isinstance(message.content, StructuredMessageContent):
+            if isinstance(message.content, Content):
                 # 处理结构化内容
                 content_parts = []
                 

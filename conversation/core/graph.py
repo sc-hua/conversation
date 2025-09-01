@@ -7,13 +7,9 @@
 
 import asyncio
 from typing import Dict, Optional, Any
-from modules import ConversationState, Message, StructuredMessageContent
-from conversation_manager import ConversationManager
-from llm import create_llm
-from dotenv import load_dotenv
-
-# 加载环境变量
-load_dotenv()
+from .modules import ConversationState, Message, Content
+from .manager import ConversationManager
+from ..llm import create_llm
 
 
 class ConversationGraph:
@@ -30,6 +26,7 @@ class ConversationGraph:
     """
 
     def __init__(self, max_concurrent: int = 5, llm_type: str = None):
+        # 使用create_llm工厂函数创建LLM实例
         self.llm = create_llm(llm_type)
         self.conversation_manager = ConversationManager()
         self.semaphore = asyncio.Semaphore(max_concurrent)
@@ -82,14 +79,14 @@ class ConversationGraph:
     async def chat(self,
                    conversation_id: Optional[str] = None,
                    system_prompt: Optional[str] = None,
-                   structured_content: Optional[StructuredMessageContent] = None,
+                   content: Optional[Content] = None,
                    is_final: bool = False) -> Dict[str, Any]:
         """
         主聊天接口，支持结构化内容。
         参数:
             conversation_id: 对话ID
             system_prompt: 系统提示
-            structured_content: 结构化输入
+            content: 结构化输入
             is_final: 是否保存到文件
         返回: dict
         """
@@ -97,7 +94,7 @@ class ConversationGraph:
             state = ConversationState(
                 conversation_id=conversation_id or ConversationState().conversation_id,
                 system_prompt=system_prompt,
-                current_input=structured_content
+                current_input=content
             )
             
             # 执行对话图：处理 → 生成 → 保存

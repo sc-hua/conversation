@@ -13,23 +13,12 @@ class ContentBlock(BaseModel):
     content: Any = Field(..., description="内容")
     extras: Optional[Dict[str, Any]] = Field(default_factory=dict, description="自定义扩展字段")
     
-    class Config:
-        # 禁止额外字段，统一收集到 extras 中
-        extra = "forbid"
-    
     def __init__(self, **data):
-        """支持 **kwargs 传入自定义字段，自动收集到 extras 中。"""
-        # 提取标准字段
-        standard_fields = {'type', 'content', 'extras'}
-        standard_data = {k: v for k, v in data.items() if k in standard_fields}
-        
-        # 其余字段作为 extras
-        extra_data = {k: v for k, v in data.items() if k not in standard_fields}
-        if extra_data:
-            existing_extras = standard_data.get('extras', {})
-            standard_data['extras'] = {**existing_extras, **extra_data}
-        
-        super().__init__(**standard_data)
+        # 只保留 type/content/extras，其他全部进 extras
+        extras = data.pop('extras', {})
+        known = {k: data.pop(k) for k in ['type', 'content'] if k in data}
+        extras.update(data)
+        super().__init__(**known, extras=extras)
     
     def get_extra(self, key: str, default=None):
         """获取自定义字段值。"""
@@ -46,95 +35,73 @@ class ContentBlock(BaseModel):
         return bool(self.extras and key in self.extras)
 
 
-class StructuredMessageContent(BaseModel):
+class Content(BaseModel):
     """有序内容块集合，支持添加文本/图片/JSON。"""
     blocks: List[ContentBlock] = Field(default_factory=list, description="内容块列表")
 
-    def add_text(self, text: str, **kwargs) -> "StructuredMessageContent":
-        """添加文本块到末尾。"""
-        self.blocks.append(ContentBlock(type="text", content=text, **kwargs))
-        return self
-
-    def add_image(self, image_url: str, **kwargs) -> "StructuredMessageContent":
-        """添加图片块到末尾。
-            - image_url: 图片的 URL 地址或者 base64 编码字符串
-            - **kwargs: 自定义字段，如 alt_text, width, height 等"""
-        self.blocks.append(ContentBlock(type="image", content=image_url, **kwargs))
-        return self
-
-    def add_json(self, json_data: Dict[str, Any], **kwargs) -> "StructuredMessageContent":
-        """添加 JSON 块到末尾。
-            - json_data: JSON 数据
-            - **kwargs: 自定义字段，如 schema, validator 等"""
-        self.blocks.append(ContentBlock(type="json", content=json_data, **kwargs))
-        return self
-    
-    def insert_text(self, index: int, text: str, **kwargs) -> "StructuredMessageContent":
-        """在指定位置插入文本块。"""
-        self.blocks.insert(index, ContentBlock(type="text", content=text, **kwargs))
-        return self
-    
-    def insert_image(self, index: int, image_url: str, **kwargs) -> "StructuredMessageContent":
-        """在指定位置插入图片块。"""
-        self.blocks.insert(index, ContentBlock(type="image", content=image_url, **kwargs))
-        return self
-    
-    def insert_json(self, index: int, json_data: Dict[str, Any], **kwargs) -> "StructuredMessageContent":
-        """在指定位置插入 JSON 块。"""
-        self.blocks.insert(index, ContentBlock(type="json", content=json_data, **kwargs))
-        return self
-
-    @classmethod
-    def from_mixed_items(cls, *items) -> "StructuredMessageContent":
-        """工厂方法：从混合项构建内容，按传入顺序排列。
+    def __init__(self, *items):
+        """初始化结构化内容，支持混合项构建。
         
         支持输入类型：
         - str: 文本内容
-        - {'image': 'url'}: 图片
-        - {'json': data}: JSON数据
-        - (content, extras_dict): 内容和自定义字段
+        - {'image': 'url'} 或者 {'json': data}
+        - (content, extras_dict): 内容 + 自定义字段
         
         示例:
-            content = StructuredMessageContent.from_mixed_items(
-                "开始文本",
-                {'image': 'chart.png'},
-                {'json': {'data': 123}},
+            content = Content(
+                "开始文本", {'image': 'chart.png'}, {'json': {'data': 123}},
                 ("结束文本", {'style': 'bold'})  # 带自定义字段
             )
         """
-        content = cls()
-        
-        for item in items:
-            if isinstance(item, tuple):
-                # 带自定义字段的项目
-                if len(item) == 2:
-                    data, extras = item
-                    extras = extras or {}
-                else:
-                    raise ValueError(f"元组参数格式错误，应为 (content, extras_dict): {item}")
+        super().__init__()
                 
-                if isinstance(data, str):
-                    content.add_text(data, **extras)
-                elif isinstance(data, dict):
-                    if 'image' in data:
-                        content.add_image(data['image'], **extras)
-                    elif 'json' in data:
-                        content.add_json(data['json'], **extras)
-                    else:
-                        content.add_json(data, **extras)  # 默认作为JSON处理
+        # 处理混合输入项
+        for item in items:
+            extras = {}
+            
+            # 处理元组格式：(content, extras_dict)
+            if isinstance(item, tuple):
+                if len(item) != 2:
+                    raise ValueError(f"元组参数应为 (content, extras_dict)，当前: {item}")
+                item, extras = item
+                if not isinstance(extras, dict):
+                    raise ValueError(f"extras 必须是字典，当前: {extras}")
+            
+            # 根据内容类型添加块
+            if isinstance(item, str):
+                self.add_text(item, **extras)
+            elif isinstance(item, dict):
+                if 'image' in item:
+                    self.add_image(item['image'], **extras)
+                elif 'json' in item:
+                    self.add_json(item['json'], **extras)
+                else:
+                    raise ValueError(f"不支持的字典格式: {item}，应包含 'image' 或 'json' 键")
             else:
-                # 普通项目，按顺序添加
-                if isinstance(item, str):
-                    content.add_text(item)
-                elif isinstance(item, dict):
-                    if 'image' in item:
-                        content.add_image(item['image'])
-                    elif 'json' in item:
-                        content.add_json(item['json'])
-                    else:
-                        content.add_json(item)  # 默认作为JSON处理
-        
-        return content
+                raise ValueError(f"不支持的输入类型: {type(item)}，当前值: {item}")
+
+    def add_text(self, text: str, **kwargs) -> "Content":
+        """添加文本块到末尾，支持自定义字段。"""
+        self.blocks.append(ContentBlock(type="text", content=text, **kwargs))
+        return self
+
+    def add_image(self, image_url: str, **kwargs) -> "Content":
+        """添加图片块到末尾，支持自定义字段。"""
+        # HSC: not elegant, move out
+        # 存储原始路径和解析后的路径
+        # 在extras中存储原始路径，便于后续处理
+        from ..utils import resolve_image_path
+        resolved_path = resolve_image_path(image_url)
+        if 'resolved_path' not in kwargs:
+            kwargs['resolved_path'] = resolved_path
+            
+        self.blocks.append(ContentBlock(type="image", content=image_url, **kwargs))
+        return self
+
+    def add_json(self, json_data: Dict[str, Any], **kwargs) -> "Content":
+        """添加 JSON 块到末尾，支持自定义字段。"""
+        self.blocks.append(ContentBlock(type="json", content=json_data, **kwargs))
+        return self
 
     def to_display_text(self) -> str:
         """把所有块合并为可读字符串，可选择显示自定义字段信息。"""
@@ -168,7 +135,7 @@ class Message(BaseModel):
     """对话消息，包含角色、内容和时间戳。"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="消息唯一标识符")
     role: str = Field(..., description="消息角色：system|user|assistant")
-    content: Union[str, StructuredMessageContent] = Field(..., description="消息内容")
+    content: Union[str, Content] = Field(..., description="消息内容")
     timestamp: datetime = Field(default_factory=datetime.now, description="消息时间戳")
 
 
@@ -177,7 +144,7 @@ class ConversationState(BaseModel):
     conversation_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="对话唯一标识符")
     system_prompt: Optional[str] = Field(None, description="系统提示词")
     messages: List[Message] = Field(default_factory=list, description="对话消息列表")
-    current_input: Optional[StructuredMessageContent] = Field(None, description="当前用户输入")
+    current_input: Optional[Content] = Field(None, description="当前用户输入")
     response: Optional[str] = Field(None, description="助手回复")
     is_complete: bool = Field(False, description="对话是否已完成")
 

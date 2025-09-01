@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 """
-Simple test script for Ollama qwen2.5vl:3b integration.
-
-Tests the complete conversation system with Ollama.
+Test script to verify Ollama integration with conversation graph.
 """
 
 import asyncio
 import os
-from dotenv import load_dotenv
-from conversation_graph import ConversationGraph
-from modules import StructuredMessageContent
 
-# Load environment variables
-load_dotenv()
+from conversation.core import ConversationGraph, Content
+from conversation.load_env import load_env
+load_env()
 
 
 async def test_ollama_conversation():
@@ -25,32 +21,32 @@ async def test_ollama_conversation():
     
     # Test 1: Simple text conversation
     print("\n1️⃣ Simple text conversation:")
-    simple_content = StructuredMessageContent()
+    simple_content = Content()
     simple_content.add_text("你好，请介绍一下你自己。")
     
     result1 = await graph.chat(
         system_prompt="你是一个友好的AI助手，使用中文回答问题。",
-        structured_content=simple_content
+        content=simple_content
     )
     
     print(f"输入: {result1['input_preview']}")
     print(f"回复: {result1['response']}")
     
-    # Test 2: Structured content with JSON
-    print("\n2️⃣ Structured content with JSON:")
-    structured_content = StructuredMessageContent()
-    structured_content.add_text("请分析以下数据：")
-    structured_content.add_json({
+    # Test 2: Content with JSON
+    print("\n2️⃣ Content with JSON:")
+    content = Content()
+    content.add_text("请分析以下数据：")
+    content.add_json({
         "销售额": 150000,
         "客户数": 245,
         "增长率": "15%",
         "地区": "华东"
     })
-    structured_content.add_text("这些销售数据表现如何？")
+    content.add_text("这些销售数据表现如何？")
     
     result2 = await graph.chat(
         conversation_id=result1['conversation_id'],  # Continue same conversation
-        structured_content=structured_content
+        content=content
     )
     
     print(f"输入: {result2['input_preview']}")
@@ -58,7 +54,7 @@ async def test_ollama_conversation():
     
     # Test 3: Multi-modal with image reference
     print("\n3️⃣ Multi-modal content:")
-    multimodal_content = StructuredMessageContent()
+    multimodal_content = Content()
     multimodal_content.add_text("我有一张图片和数据需要分析")
     multimodal_content.add_image("data_chart.png")
     multimodal_content.add_json({
@@ -70,7 +66,7 @@ async def test_ollama_conversation():
     
     result3 = await graph.chat(
         conversation_id=result1['conversation_id'],
-        structured_content=multimodal_content,
+        content=multimodal_content,
         is_final=True  # Save conversation to file
     )
     

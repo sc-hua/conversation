@@ -1,31 +1,33 @@
 #!/usr/bin/env python3
 """
-Test script for Ollama qwen2.5vl:3b integration.
-
-Simple test to verify the LLM integration works correctly
-with different configurations.
+Test LLM providers with different content types.
 """
 
 import asyncio
+import sys
 import os
-from dotenv import load_dotenv
-from modules import StructuredMessageContent
-from llm import create_llm
 
-# Load environment variables
-load_dotenv()
+from conversation.core.modules import Content
+from conversation.llm import OpenAILLM, OllamaLLM, MockLLM
+from conversation.load_env import load_env
+load_env()
 
 
 async def test_llm(llm_type: str):
-    """Test LLM with structured content."""
+    """Test LLM with content."""
     print(f"\n🧪 Testing {llm_type.upper()} LLM...")
     
     try:
         # Create LLM instance
-        llm = create_llm(llm_type)
+        if llm_type == 'openai':
+            llm = OpenAILLM()
+        elif llm_type == 'ollama':
+            llm = OllamaLLM()
+        else:
+            llm = MockLLM()
         
-        # Create test structured content
-        content = StructuredMessageContent()
+        # Create test content
+        content = Content()
         content.add_text("你好，我想测试对话功能", position=0)
         content.add_json({"test": "data", "count": 3}, position=1)
         content.add_text("请分析这些内容", position=2)

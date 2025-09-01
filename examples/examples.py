@@ -1,8 +1,8 @@
 """简洁示例和实用函数，演示结构化内容定位与使用模式。"""
 
 import asyncio
-from conversation_graph import ConversationGraph
-from modules import StructuredMessageContent
+
+from conversation.core import ConversationGraph, Content
 
 
 class ConversationBuilder:
@@ -17,7 +17,7 @@ class ConversationBuilder:
         print("📊 创建数据分析对话...")
         
         # 第一条消息：带结构化数据的介绍
-        intro_content = StructuredMessageContent.from_mixed_items(
+        intro_content = Content(
             "我需要分析以下用户数据。",
             "首先，这是用户基本信息：",
             {'json': {
@@ -33,14 +33,14 @@ class ConversationBuilder:
         
         result1 = await self.graph.chat(
             system_prompt="你是资深用户行为分析师，擅长从多模态数据中提取洞见。",
-            structured_content=intro_content,
+            content=intro_content,
         )
         
         conversation_id = result1['conversation_id']
         print(f"初步分析: {result1['response']}\n")
         
         # 后续详细指标
-        metrics_content = StructuredMessageContent.from_mixed_items(
+        metrics_content = Content(
             "根据你的分析，以下是详细指标：",
             {'json': {
                 "sessions": [
@@ -58,7 +58,7 @@ class ConversationBuilder:
         
         result2 = await self.graph.chat(
             conversation_id=conversation_id,
-            structured_content=metrics_content,
+            content=metrics_content,
             is_final=True
         )
         
@@ -68,7 +68,7 @@ class ConversationBuilder:
     async def create_product_presentation(self) -> str:
         """示例：创建产品演示对话并返回 conversation_id。"""
         print("🚀 创建产品演示...")
-        presentation_content = StructuredMessageContent.from_mixed_items(
+        presentation_content = Content(
             "新品发布演示",
             {'image': "product_hero_image.jpg"},
             "主要功能：",
@@ -95,7 +95,7 @@ class ConversationBuilder:
 
         result = await self.graph.chat(
             system_prompt="你是产品营销专家，负责撰写有吸引力的演示文案。",
-            structured_content=presentation_content,
+            content=presentation_content,
             is_final=True,
         )
 
@@ -110,7 +110,7 @@ async def demonstrate_custom_fields():
     graph = ConversationGraph()
     
     # 创建带自定义字段的内容 - 按添加顺序排列
-    content = StructuredMessageContent()
+    content = Content()
     
     # 文本块带样式信息
     content.add_text(
@@ -148,7 +148,7 @@ async def demonstrate_custom_fields():
             for key, value in block.extras.items():
                 print(f"  {key}: {value}")
     
-    result = await graph.chat(structured_content=content)
+    result = await graph.chat(content=content)
     print(f"\n对话结果: {result['response']}")
     
     return result['conversation_id']
@@ -162,17 +162,17 @@ async def demonstrate_positioning_control():
     graph = ConversationGraph()
     
     # 测试用例 1: 顺序添加
-    content1 = StructuredMessageContent()
+    content1 = Content()
     content1.add_text("第一项")
     content1.add_text("第二项")
     content1.add_image("middle_image.png")
     content1.add_json({"data": "第四项"})
     
-    result1 = await graph.chat(structured_content=content1)
+    result1 = await graph.chat(content=content1)
     print(f"顺序添加: {result1['input_preview']}")
     
     # 测试用例 2: 使用工厂方法
-    content2 = StructuredMessageContent.from_mixed_items(
+    content2 = Content(
         "引言",
         {'image': 'diagram.png'},
         {'json': {'metrics': [1, 2, 3]}},
@@ -180,18 +180,18 @@ async def demonstrate_positioning_control():
         "中间部分"
     )
     
-    result2 = await graph.chat(structured_content=content2)
+    result2 = await graph.chat(content=content2)
     print(f"工厂方法结果: {result2['input_preview']}")
     
     # 测试用例 3: 演示插入操作
-    content3 = StructuredMessageContent()
+    content3 = Content()
     content3.add_text("开始")
     content3.add_text("结束")
     # 在中间插入内容
     content3.insert_text(1, "中间插入的文本")
     content3.insert_image(2, "inserted_image.png")
     
-    result3 = await graph.chat(structured_content=content3)
+    result3 = await graph.chat(content=content3)
     print(f"插入操作结果: {result3['input_preview']}")
 
 
@@ -204,7 +204,7 @@ async def batch_conversation_processing():
     # 创建多个对话请求
     tasks = []
     for i in range(5):
-        content = StructuredMessageContent.from_mixed_items(
+        content = Content(
             f"处理任务 #{i+1}",
             {'json': {"task_id": i+1, "priority": "high" if i % 2 == 0 else "normal"}},
             "请分析并回复"
@@ -212,7 +212,7 @@ async def batch_conversation_processing():
 
         task = graph.chat(
             system_prompt=f"你是 AI 助手 #{i+1}",
-            structured_content=content,
+            content=content,
         )
         tasks.append(task)
     

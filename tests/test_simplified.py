@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """测试简化后的模型功能。"""
 
-from modules import ContentBlock, StructuredMessageContent
+from conversation.core.modules import ContentBlock, Content
 
 def test_simplified_models():
     """测试简化后的模型。"""
@@ -17,9 +17,9 @@ def test_simplified_models():
     print(f"   获取样式: {block.get_extra('style')}")
     print(f"   是否有颜色: {block.has_extra('color')}")
     
-    # 测试 StructuredMessageContent（按添加顺序）
-    print("\n2️⃣ 测试 StructuredMessageContent:")
-    content = StructuredMessageContent()
+    # 测试 Content（按添加顺序）
+    print("\n2️⃣ 测试 Content:")
+    content = Content()
     content.add_text('第一项')
     content.add_image('test.png', alt='图片描述', width=300)
     content.add_json({'key': 'value'}, source='测试数据')
@@ -34,7 +34,7 @@ def test_simplified_models():
     
     # 测试工厂方法
     print("\n3️⃣ 测试工厂方法:")
-    content2 = StructuredMessageContent.from_mixed_items(
+    content2 = Content(
         '标题',
         {'image': 'chart.png'},
         {'json': {'data': 123}},
@@ -49,12 +49,14 @@ def test_simplified_models():
     
     print(f"   工厂方法显示文本: {content2.to_display_text()}")
     
-    # 测试插入功能
-    print("\n4️⃣ 测试插入功能:")
-    content3 = StructuredMessageContent()
+    # 测试 blocks 直接操作
+    print("\n4️⃣ 测试 blocks 直接操作:")
+    content3 = Content()
     content3.add_text('开始')
     content3.add_text('结束')
-    content3.insert_text(1, '中间插入', priority='high')
+    # 直接操作blocks列表插入内容
+    middle_block = ContentBlock(type='text', content='中间插入', extras={'priority': 'high'})
+    content3.blocks.insert(1, middle_block)
     
     print("   插入后的内容:")
     for i, block in enumerate(content3.blocks):

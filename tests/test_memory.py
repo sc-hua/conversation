@@ -8,11 +8,10 @@
 
 import asyncio
 import os
-from dotenv import load_dotenv
-from conversation_graph import ConversationGraph
-from modules import StructuredMessageContent
 
-load_dotenv()
+from conversation.core import ConversationGraph, Content
+from conversation.load_env import load_env
+load_env()
 
 
 async def test_memory_capability():
@@ -26,24 +25,24 @@ async def test_memory_capability():
     print("\n📝 测试1: 基础信息记忆")
     
     # 第一轮：提供基础信息
-    content1 = StructuredMessageContent()
+    content1 = Content()
     content1.add_text("我的名字叫张三，我今年25岁，是一名软件工程师。请记住这些信息。")
     
     result1 = await graph.chat(
         system_prompt="你是一个有记忆能力的AI助手，请记住用户告诉你的信息。",
-        structured_content=content1
+        content=content1
     )
     
     print(f"💬 用户: {result1['input_preview']}")
     print(f"🤖 助手: {result1['response'][:100]}...")
     
     # 第二轮：测试是否记住了名字
-    content2 = StructuredMessageContent()
+    content2 = Content()
     content2.add_text("我的名字是什么？")
     
     result2 = await graph.chat(
         conversation_id=result1['conversation_id'],
-        structured_content=content2
+        content=content2
     )
     
     print(f"💬 用户: {result2['input_preview']}")
@@ -57,7 +56,7 @@ async def test_memory_capability():
     print("\n📊 测试2: 复杂数据记忆")
     
     # 第三轮：提供复杂数据
-    content3 = StructuredMessageContent()
+    content3 = Content()
     content3.add_text("以下是我的项目数据：")
     content3.add_json({
         "项目名": "AI助手开发",
@@ -69,19 +68,19 @@ async def test_memory_capability():
     
     result3 = await graph.chat(
         conversation_id=result1['conversation_id'],
-        structured_content=content3
+        content=content3
     )
     
     print(f"💬 用户: {result3['input_preview'][:80]}...")
     print(f"🤖 助手: {result3['response'][:100]}...")
     
     # 第四轮：测试是否记住了项目信息和个人信息
-    content4 = StructuredMessageContent()
+    content4 = Content()
     content4.add_text("根据我之前提到的个人信息和项目数据，你觉得我能按时完成这个项目吗？")
     
     result4 = await graph.chat(
         conversation_id=result1['conversation_id'],
-        structured_content=content4
+        content=content4
     )
     
     print(f"💬 用户: {result4['input_preview']}")
@@ -98,26 +97,26 @@ async def test_memory_capability():
     print("\n🎯 测试3: 多模态内容记忆")
     
     # 第五轮：多模态输入
-    content5 = StructuredMessageContent()
+    content5 = Content()
     content5.add_text("我刚刚拍了一张我的工作桌照片")
     content5.add_image("workspace_photo.jpg", position=1)
     content5.add_text("桌子上有我的笔记本电脑和咖啡杯", position=2)
     
     result5 = await graph.chat(
         conversation_id=result1['conversation_id'],
-        structured_content=content5
+        content=content5
     )
     
     print(f"💬 用户: {result5['input_preview'][:80]}...")
     print(f"🤖 助手: {result5['response'][:100]}...")
     
     # 第六轮：测试多模态记忆
-    content6 = StructuredMessageContent()
+    content6 = Content()
     content6.add_text("刚才我给你看的照片里有什么？结合我的个人信息，你觉得这个工作环境适合我吗？")
     
     result6 = await graph.chat(
         conversation_id=result1['conversation_id'],
-        structured_content=content6,
+        content=content6,
         is_final=True
     )
     

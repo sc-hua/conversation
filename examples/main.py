@@ -1,22 +1,22 @@
 """独立版对话系统示例，使用现有模块避免重复定义。"""
 
 import asyncio
+from json import load
 import uuid
 from typing import Dict, List, Optional, Any
-from dotenv import load_dotenv
 
 # 使用现有模块，避免重复定义
-from modules import Message, StructuredMessageContent
-from conversation_manager import ConversationManager
-
-load_dotenv()
+from conversation.core.modules import Message, Content
+from conversation.core.manager import ConversationManager
+from conversation.load_env import load_env
+load_env()
 
 
 class MockLLM:
     """模拟语言模型，用于无 API 依赖的测试。"""
     
     async def generate_response(self, messages: List[Message], 
-                                current_input: StructuredMessageContent) -> str:
+                                current_input: Content) -> str:
         """基于结构化输入生成模拟回复文本。"""
         await asyncio.sleep(0.1)  # 模拟处理延迟
 
@@ -54,7 +54,7 @@ class StandaloneConversationGraph:
     async def chat(self,
                    conversation_id: Optional[str] = None,
                    system_prompt: Optional[str] = None,
-                   structured_content: Optional[StructuredMessageContent] = None,
+                   content: Optional[Content] = None,
                    is_final: bool = False
                    ) -> Dict[str, Any]:
         """主聊天接口：处理输入、调用 LLM、保存历史并返回结果字典。"""
@@ -73,11 +73,11 @@ class StandaloneConversationGraph:
             
             # 处理用户输入并生成响应
             response = None
-            if structured_content:
-                response = await self.llm.generate_response(messages, structured_content)
+            if content:
+                response = await self.llm.generate_response(messages, content)
                 
                 # 保存用户消息
-                user_msg = Message(role="user", content=structured_content)
+                user_msg = Message(role="user", content=content)
                 messages.append(user_msg)
                 self.conversation_manager.save_message(conv_id, user_msg)
                 
@@ -94,8 +94,8 @@ class StandaloneConversationGraph:
                 "conversation_id": conv_id,
                 "response": response,
                 "message_count": len(messages),
-                "input_preview": (structured_content.to_display_text() 
-                                if structured_content else None)
+                "input_preview": (content.to_display_text() 
+                                if content else None)
             }
 
 
@@ -112,7 +112,7 @@ async def comprehensive_demo():
     
     # 演示 1: 复杂结构化内容
     print("\n1️⃣ 复杂结构化内容：")
-    content1 = StructuredMessageContent.from_mixed_items(
+    content1 = Content(
         "数据分析报告",
         "执行摘要：",
         {'json': {"状态": "已完成", "得分": 95}},
@@ -124,7 +124,7 @@ async def comprehensive_demo():
     
     result1 = await graph.chat(
         system_prompt="你是数据分析专家。",
-        structured_content=content1
+        content=content1
     )
     
     print(f"输入: {result1['input_preview']}")
@@ -132,7 +132,7 @@ async def comprehensive_demo():
     
     # 演示 2: 混合内容类型
     print("2️⃣ 混合内容类型：")
-    content2 = StructuredMessageContent.from_mixed_items(
+    content2 = Content(
         "项目开始",
         {'image': "intro_image.jpg"},
         "中间说明",
@@ -142,7 +142,7 @@ async def comprehensive_demo():
     
     result2 = await graph.chat(
         conversation_id=result1['conversation_id'],
-        structured_content=content2
+        content=content2
     )
     
     print(f"输入: {result2['input_preview']}")
@@ -150,7 +150,7 @@ async def comprehensive_demo():
     
     # 演示 3: 最终消息并保存
     print("3️⃣ 最终消息并保存：")
-    content3 = StructuredMessageContent.from_mixed_items(
+    content3 = Content(
         "感谢您的分析！",
         "总结图片：",
         {'image': "summary_dashboard.png"}
@@ -158,7 +158,7 @@ async def comprehensive_demo():
     
     result3 = await graph.chat(
         conversation_id=result1['conversation_id'],
-        structured_content=content3,
+        content=content3,
         is_final=True
     )
     
@@ -170,12 +170,12 @@ async def comprehensive_demo():
     print("\n4️⃣ 并发处理测试：")
     tasks = []
     for i in range(3):
-        content = StructuredMessageContent.from_mixed_items(
+        content = Content(
             f"任务 {i+1}",
             {'json': {"任务ID": i+1}}
         )
         
-        task = graph.chat(structured_content=content)
+        task = graph.chat(content=content)
         tasks.append(task)
     
     start_time = asyncio.get_event_loop().time()

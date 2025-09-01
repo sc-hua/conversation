@@ -28,7 +28,7 @@ await chat(text="分析这个", images=["chart.png"], json_data={"metric": 95})
 ### ✅ 我们的创新方案
 ```python
 # 🎯 精确位置控制 - 内容可以任意顺序排列！
-content = (StructuredMessageContent()
+content = (Content()
            .add_text("首先查看概述图表", 0)
            .add_image("overview.png", 1)
            .add_text("关键指标分析", 2)  
@@ -36,7 +36,7 @@ content = (StructuredMessageContent()
            .add_text("详细趋势见下图", 4)
            .add_image("trend.png", 5))
 
-await graph.chat(structured_content=content)
+await graph.chat(content=content)
 ```
 
 </details>
@@ -68,13 +68,13 @@ process_data/
 
 ### 简单示例
 ```python
-from main import StandaloneConversationGraph, StructuredMessageContent
+from main import StandaloneConversationGraph, Content
 
 # 初始化
 graph = StandaloneConversationGraph()
 
 # 创建结构化内容
-content = (StructuredMessageContent()
+content = (Content()
            .add_text("请分析这些数据", 0)
            .add_json({"销售额": [100, 200, 150]}, 1)
            .add_text("并提供见解", 2))
@@ -82,7 +82,7 @@ content = (StructuredMessageContent()
 # 发送消息
 result = await graph.chat(
     system_prompt="你是数据分析专家",
-    structured_content=content
+    content=content
 )
 
 print(f"AI响应: {result['response']}")
@@ -96,13 +96,13 @@ print(f"AI响应: {result['response']}")
 ```python
 # 第一轮对话
 response1 = await graph.chat(
-    structured_content=content1,
+    content=content1,
     conversation_id="session_123"
 )
 
 # 第二轮对话 - 自动保持上下文
 response2 = await graph.chat(
-    structured_content=content2,
+    content=content2,
     conversation_id="session_123"  # 相同ID，自动继续对话
 )
 
@@ -124,7 +124,7 @@ async def process_multiple_conversations():
     # 创建10个并发对话任务
     for i in range(10):
         task = graph.chat(
-            structured_content=create_content_for_task(i),
+            content=create_content_for_task(i),
             conversation_id=f"batch_task_{i}"
         )
         tasks.append(task)
@@ -177,7 +177,7 @@ print(f"对话已保存到: {file_path}")
 
 ```python
 # 分析报告内容构建
-report_content = (StructuredMessageContent()
+report_content = (Content()
     .add_text("📈 Q3业绩总览", 0)
     .add_image("q3_overview.png", 1)
     .add_text("核心指标：", 2)
@@ -204,7 +204,7 @@ analyst_prompt = """你是资深商业分析师，请基于提供的数据和图
 3. 具体行动建议"""
 
 response = await graph.chat(
-    structured_content=report_content,
+    content=report_content,
     system_prompt=analyst_prompt
 )
 ```
@@ -246,7 +246,7 @@ content = create_mixed_content(
 
 | 组件 | 功能 | 特色 |
 |------|------|------|
-| `StructuredMessageContent` | 内容结构化管理 | 精确位置控制 |
+| `Content` | 内容结构化管理 | 精确位置控制 |
 | `ConversationManager` | 对话状态管理 | 内存+文件双重存储 |
 | `ConversationGraph` | LangGraph工作流 | 三节点异步处理 |
 | `MockLLM` | 模拟语言模型 | 测试和演示用 |

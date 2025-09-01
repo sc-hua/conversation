@@ -1,6 +1,8 @@
 # Add for project
 *logs/
 export/
+test/
+*.egg-info/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
