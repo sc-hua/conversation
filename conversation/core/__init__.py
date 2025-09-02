@@ -1,6 +1,6 @@
 """核心模块包"""
 
-from .modules import Content, Message, ConversationState, History
+from .modules import Content, ContentBlock, Message, ConversationState, History
 from .graph import ConversationGraph
 from .manager import HistoryManager
 
@@ -12,6 +12,7 @@ ConvGraph = ConversationGraph
 
 __all__ = [
     'Content',
+    'ContentBlock',
     'Message',
     'ConversationState',
     'History',

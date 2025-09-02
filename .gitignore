@@ -1,5 +1,6 @@
 # Add for project
 *logs/
+*log/
 export/
 test/
 *.egg-info/

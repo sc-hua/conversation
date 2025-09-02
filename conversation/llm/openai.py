@@ -5,6 +5,7 @@ import os
 from typing import List, Dict
 from .base import BaseLLM
 from ..core.modules import Message, Content
+from ..utils.image_utils import load_image
 
 
 class OpenAILLM(BaseLLM):
@@ -53,7 +54,6 @@ class OpenAILLM(BaseLLM):
                     if blk.type == "text":
                         content_parts.append({"type": "text", "text": blk.content})
                     elif blk.type == "image":
-                        from ..utils import load_image
                         image_data = load_image(blk.content, return_type="base64")
                         if image_data:
                             img_format = image_data.get('format', 'PNG').lower()
@@ -94,7 +94,6 @@ class OpenAILLM(BaseLLM):
                 if blk.type == "text":
                     content_parts.append({"type": "text", "text": blk.content})
                 elif blk.type == "image":
-                    from ..utils import load_image
                     image_data = load_image(blk.content, return_type="base64")
                     if image_data:
                         img_format = image_data.get('format', 'PNG').lower()

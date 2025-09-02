@@ -5,6 +5,7 @@ import os
 from typing import List, Dict
 from .base import BaseLLM
 from ..core.modules import Message, Content
+from ..utils.image_utils import load_image
 
 
 class OllamaLLM(BaseLLM):
@@ -51,7 +52,6 @@ class OllamaLLM(BaseLLM):
                     content_parts.append(blk.content)
                 elif blk.type == "image":
                     # 加载并转换图片为base64供Ollama使用
-                    from ..utils import load_image
                     image_data = load_image(blk.content, return_type="base64")
                     if image_data:
                         # Ollama支持base64图片，格式为 data:image/format;base64,data
@@ -82,7 +82,6 @@ class OllamaLLM(BaseLLM):
         if current_input:
             for blk in current_input.blocks:
                 if blk.type == "image":
-                    from ..utils import load_image
                     image_data = load_image(blk.content, return_type="base64")
                     if image_data:
                         images.append(image_data.get('base64', ''))

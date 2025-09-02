@@ -8,6 +8,8 @@ load_dotenv()
 
 # 然后导入conversation模块
 from conversation.core import ConversationGraph, Content
+from conversation.utils import get_logger
+logger = get_logger(__name__)
 
 
 class ConversationBuilder:

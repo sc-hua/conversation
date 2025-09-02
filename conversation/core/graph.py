@@ -10,7 +10,8 @@ from typing import Dict, Optional, Any
 from .modules import ConversationState, Message, Content
 from .manager import HistoryManager
 from ..llm import create_llm, BaseLLM
-from ..utils import get_logger, log_exception, shortcut_id
+from ..utils.logging import get_logger, log_exception, warn_once
+from ..utils.id_utils import shortcut_id, new_id
 
 
 class ConversationGraph:
@@ -26,11 +27,19 @@ class ConversationGraph:
         semaphore: 并发信号量
     """
 
-    def __init__(self, llm: str | BaseLLM | None = None, max_concurrent: int = 5):
+    def __init__(
+        self, 
+        llm: str | BaseLLM | None = None, 
+        max_concurrent: int = 5
+    ):
         self.llm = llm if isinstance(llm, BaseLLM) else create_llm(llm)
         self.history_manager = HistoryManager()
         self.semaphore = asyncio.Semaphore(max_concurrent)
         self.logger = get_logger("graph")
+
+    # HSC: check whether this is needed
+    # def generate_conv_id(self) -> str:
+    #     return new_id()
 
     @log_exception
     async def _prepare_messages(self, state: ConversationState) -> ConversationState:
@@ -38,9 +47,9 @@ class ConversationGraph:
         加载历史，必要时添加系统提示。
         参数 / 返回: state: ConversationState
         """
-                # 如果是第一条消息，则添加系统提示
+        # 如果是第一条消息，则添加系统提示
         if (not self.history_manager.get_msgs(state.conv_id) and state.system_prompt):
-            self.logger.debug(f"添加系统提示 | conv_id={shortcut_id(state.conv_id)}")
+            self.logger.debug(f"添加系统提示 | conv_id = {shortcut_id(state.conv_id)}")
             self.history_manager.save_msg(
                 conv_id=state.conv_id,
                 msg=Message(role="system", content=state.system_prompt)
@@ -54,7 +63,7 @@ class ConversationGraph:
         参数 / 返回: state: ConversationState
         """
         if state.current_input:
-            self.logger.info(f"生成响应 | conv_id={shortcut_id(state.conv_id)}")
+            self.logger.info(f"生成响应 | conv_id = {shortcut_id(state.conv_id)}")
             response = await self.llm.generate_response(
                 messages=self.history_manager.get_msgs(state.conv_id), 
                 current_input=state.current_input
@@ -78,14 +87,18 @@ class ConversationGraph:
                 conv_id=state.conv_id,
                 msg=Message(role="assistant", content=state.response)
             )
-            self.logger.debug(f"保存历史 | conv_id={shortcut_id(state.conv_id)} | messages={len(self.history_manager.get_msgs(state.conv_id))}")
+            self.logger.debug(f"保存历史 | "
+                              f"conv_id = {shortcut_id(state.conv_id)} | "
+                              f"messages = {self.history_manager.get_length(state.conv_id)}")
         return state
 
     @log_exception
-    async def chat(self,
-                   conv_id: Optional[str] = None,
-                   system_prompt: Optional[str] = None,
-                   content: Optional[Content] = None) -> Dict[str, Any]:
+    async def chat(
+        self,
+        conv_id: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        content: Optional[Content] = None
+    ) -> Dict[str, Any]:
         """
         主聊天接口，支持结构化内容。
         参数:
@@ -94,6 +107,8 @@ class ConversationGraph:
             content: 结构化输入
         返回: dict
         """
+        # # HSC: will remove
+        # assert conv_id, "必须提供 conv_id"
         async with self.semaphore:  # 控制并发
             state = ConversationState(
                 conv_id=conv_id or ConversationState().conv_id,
@@ -101,21 +116,25 @@ class ConversationGraph:
                 current_input=content
             )
             
-            self.logger.info(f"对话开始 | conv_id={shortcut_id(state.conv_id)}")
+            self.logger.info(f"对话开始 | conv_id = {shortcut_id(state.conv_id)}")
             
             # 执行对话图：处理 → 生成 → 保存
             state = await self._prepare_messages(state)
             state = await self._generate_response(state)
             state = await self._save_history(state)
             
-            self.logger.info(f"对话完成 | conv_id={shortcut_id(state.conv_id)} | messages={len(self.history_manager.get_msgs(state.conv_id))}")
-            
+            self.logger.info(f"对话完成 | "
+                             f"conv_id = {shortcut_id(state.conv_id)} | "
+                             f"messages = {self.history_manager.get_length(state.conv_id)}")
+
             return {
                 "conv_id": state.conv_id,
                 "response": state.response,
-                "message_count": len(self.history_manager.get_msgs(state.conv_id)),
-                "input_preview": (state.current_input.to_display_text() 
-                                if state.current_input else None)
+                "message_count": self.history_manager.get_length(state.conv_id),
+                "input_preview": (
+                    state.current_input.to_display_text() 
+                    if state.current_input else None
+                )
             }
 
     async def end(self, conv_id: str, save: bool) -> str:
@@ -125,5 +144,5 @@ class ConversationGraph:
             file_path = await self.history_manager.save_conversation_to_file(conv_id)
             self.logger.info(f"对话已保存 | file = {file_path}")
         self.history_manager.cleanup_memory(conv_id)
-        self.logger.debug(f"清理内存 | conv_id={shortcut_id(conv_id)}")
+        self.logger.debug(f"清理内存 | conv_id = {shortcut_id(conv_id)}")
         return file_path

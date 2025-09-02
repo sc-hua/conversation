@@ -69,7 +69,7 @@ async def main():
     module_example() 
     await conversation_example()
     
-    print("\n✅ 示例完成，查看 ./logs/conversation.log")
+    print("\n✅ 示例完成，查看 ./log/conversation.log")
 
 
 if __name__ == "__main__":

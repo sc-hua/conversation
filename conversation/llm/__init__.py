@@ -5,14 +5,18 @@ from .base import BaseLLM
 from .mock import MockLLM
 from .ollama import OllamaLLM
 from .openai import OpenAILLM
+from ..utils.logging import warn_once
 
 __all__ = ['BaseLLM', 'MockLLM', 'OllamaLLM', 'OpenAILLM', 'create_llm']
 
 
 def create_llm(provider: str = None, **kwargs) -> BaseLLM:
     """创建LLM实例，默认从环境变量LLM_NAME读取"""
-    provider = provider or os.getenv('LLM_NAME', 'mock').lower()
-    
+    provider = provider or os.getenv('LLM_NAME', "").lower()
+    if not provider:
+        provider = "mock"
+        warn_once(f"未指定 LLM 提供商，使用 {provider}")
+
     if provider == "mock":
         return MockLLM(**kwargs)
     elif provider == "ollama":

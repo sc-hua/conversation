@@ -3,7 +3,7 @@
 from typing import Dict, List, Any, Optional, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
-import uuid
+from ..utils.id_utils import new_id
 import json
 
 
@@ -43,17 +43,24 @@ class Content(BaseModel):
         """初始化结构化内容，支持混合项构建。
         
         支持输入类型：
-        - str: 文本内容
+        - str: 文本内容（单个文本或多个文本项）
         - {'image': 'url'} 或者 {'json': data}
         - (content, extras_dict): 内容 + 自定义字段
         
         示例:
+            # 单文本初始化
+            content = Content("这是一段文本")
+            
+            # 混合内容初始化
             content = Content(
                 "开始文本", {'image': 'chart.png'}, {'json': {'data': 123}},
                 ("结束文本", {'style': 'bold'})  # 带自定义字段
             )
         """
         super().__init__()
+        if len(items) == 1 and isinstance(items[0], str):
+            self.add_text(items[0])
+            return
                 
         # 处理混合输入项
         for item in items:
@@ -71,7 +78,9 @@ class Content(BaseModel):
             if isinstance(item, str):
                 self.add_text(item, **extras)
             elif isinstance(item, dict):
-                if 'image' in item:
+                if 'text' in item:
+                    self.add_text(item['text'], **extras)
+                elif 'image' in item:
                     self.add_image(item['image'], **extras)
                 elif 'json' in item:
                     self.add_json(item['json'], **extras)
@@ -90,7 +99,7 @@ class Content(BaseModel):
         # HSC: not elegant, move out
         # 存储原始路径和解析后的路径
         # 在extras中存储原始路径，便于后续处理
-        from ..utils import resolve_image_path
+        from ..utils.image_utils import resolve_image_path
         resolved_path = resolve_image_path(image_url)
         if 'resolved_path' not in kwargs:
             kwargs['resolved_path'] = resolved_path
@@ -133,7 +142,7 @@ class Content(BaseModel):
 
 class Message(BaseModel):
     """对话消息，包含角色、内容和时间戳。"""
-    msg_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="消息唯一标识符")
+    msg_id: str = Field(default_factory=new_id, description="消息唯一标识符")
     role: str = Field(..., description="消息角色：system|user|assistant")
     content: Union[str, Content] = Field(..., description="消息内容")
     timestamp: datetime = Field(default_factory=datetime.now, description="消息时间戳")
@@ -141,7 +150,7 @@ class Message(BaseModel):
 
 class ConversationState(BaseModel):
     """运行时的对话状态与历史。"""
-    conv_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="对话唯一标识符")
+    conv_id: str = Field(default_factory=new_id, description="对话唯一标识符")
     system_prompt: Optional[str] = Field(None, description="系统提示词")
     current_input: Optional[Content] = Field(None, description="当前用户输入")
     response: Optional[str] = Field(None, description="助手回复")
@@ -150,7 +159,7 @@ class ConversationState(BaseModel):
 
 class History(BaseModel):
     """已完成对话的内存存储、文件持久化表示。"""
-    conv_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="对话唯一标识符")
+    conv_id: str = Field(default_factory=new_id, description="对话唯一标识符")
     created_at: datetime = Field(default_factory=datetime.now, description="创建时间")
     updated_at: datetime = Field(default_factory=datetime.now, description="更新时间")
     metadata: Optional[Dict[str, Any]] = Field(None, description="元数据")

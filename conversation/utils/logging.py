@@ -54,16 +54,16 @@ class Logger:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance._warned_messages = set()  # 存储已警告的消息
             cls._instance._setup()
         return cls._instance
     
     def _setup(self):
         """初始化日志配置"""
         log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-        log_dir = Path(os.getenv("LOG_DIR"))
-        
-        # 创建目录
+        log_dir = Path(os.getenv("LOG_DIR", "./log"))
         log_dir.mkdir(parents=True, exist_ok=True)  # 添加parents=True
+        log_path = log_dir / "conversation.log"
         
         # 主日志器
         self.logger = logging.getLogger("conversation")
@@ -80,19 +80,33 @@ class Logger:
             
             # 文件输出
             file_handler = logging.handlers.RotatingFileHandler(
-                log_dir / "conversation.log", maxBytes=5*1024*1024, backupCount=3, encoding='utf-8'
+                log_path, maxBytes=5*1024*1024, backupCount=3, encoding='utf-8'
             )
             file_handler.setFormatter(RelativePathFormatter(
                 '%(asctime)s | %(levelname)-8s | %(relative_path)s:%(lineno)d | %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S'
             ))
             self.logger.addHandler(file_handler)
-    
+        
+        if not os.getenv("LOG_DIR", ""):
+            self.warn_once(f"LOG_DIR 环境变量未设置，使用 {log_dir.absolute()}")
+
     def get_logger(self, name: str = None):
         """获取子模块日志器"""
         if name:
             return logging.getLogger(f"conversation.{name}")
         return self.logger
+    
+    def warn_once(self, message: str, logger_name: str = None):
+        """只警告一次的功能，避免重复警告同一消息"""
+        if message not in self._warned_messages:
+            self._warned_messages.add(message)
+            logger = self.get_logger(logger_name)
+            logger.warning(message, stacklevel=3)
+            # 使用 stacklevel=3，跳过: 
+            # 1. logger.warning(), 当前位置
+            # 2. Logger.warn_once(), 当前方法
+            # 3. warn_once(), 全局函数
 
 
 # 全局日志器
@@ -102,6 +116,16 @@ _logger = Logger()
 def get_logger(name: str = None):
     """获取日志器"""
     return _logger.get_logger(name)
+
+
+def warn_once(message: str, logger_name: str = None):
+    """只警告一次，避免重复的警告消息
+    
+    Args:
+        message: 警告消息内容
+        logger_name: 日志器名称，不指定则使用默认日志器
+    """
+    return _logger.warn_once(message, logger_name)
 
 
 def log_exception(func):

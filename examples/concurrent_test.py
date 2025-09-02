@@ -18,9 +18,9 @@ from conversation.utils.image_utils import load_image
 
 # 全局配置
 LLM = "mock"
-LLM = "oai"
+# LLM = "oai"
 SAVE_CONVERSATIONS = True  # 全局控制是否保存对话到文件
-os.environ['HISTORY_SAVE_PATH'] = './logs/draft'  # 设置保存路径
+os.environ['HISTORY_SAVE_PATH'] = './log/draft'  # 设置保存路径
 
 # 测试图像路径
 TEST_IMAGE_PATH = "./data/images/test_image.jpg"
@@ -263,7 +263,7 @@ class SimpleConcurrentTest:
             "mixed_content": mixed_results
         }
         
-        result_file = f"logs/test_results_{int(time.time())}.json"
+        result_file = f"log/test_results_{int(time.time())}.json"
         with open(result_file, 'w', encoding='utf-8') as f:
             json.dump(all_results, f, indent=2, ensure_ascii=False)
         
