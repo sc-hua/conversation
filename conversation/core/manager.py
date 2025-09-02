@@ -1,90 +1,62 @@
-"""
-Conversation Manager: 多轮对话系统的核心管理组件。
-
-提供对话历史的管理、持久化和导出功能。
-支持内存存储和文件持久化的混合模式。
-"""
-
-import json
-import os
-from typing import Dict, List
-from datetime import datetime
-from .modules import Message, Content
-
-import json
 import os
 import aiofiles
 from pathlib import Path
 from typing import Dict, List
 from datetime import datetime
-from .modules import Message, Content
+from .modules import Message, History
 
 
-class ConversationManager:
+class HistoryManager:
     """
-    对话历史管理，支持结构化内容。
+    History Manager: 多轮对话系统的核心管理组件。
+
+    提供对话历史的管理、持久化和导出功能。
+    支持内存存储和文件持久化的混合模式。
+    
     参数:
         save_path: 保存目录
     属性:
-        conversations: 内存对话存储
+        history_map: 内存对话存储
         save_path: 文件保存目录
     """
 
     def __init__(self, save_path: str = None):
-        save_path = save_path or os.getenv("CONVERSATION_SAVE_PATH")
-        self.conversations: Dict[str, List[Message]] = {}
+        save_path = save_path or os.getenv("HISTORY_SAVE_PATH")
+        self.history_map: Dict[str, History] = {
+            # conv_id：History()
+            # ...
+        }
         self.save_path = Path(save_path)
         self.save_path.mkdir(exist_ok=True)
 
-    def save_message(self, conversation_id: str, message: Message) -> None:
+    def save_msg(self, conv_id: str, msg: Message) -> None:
         """保存单条消息到内存。"""
-        if conversation_id not in self.conversations:
-            self.conversations[conversation_id] = []
-        self.conversations[conversation_id].append(message)
+        if conv_id not in self.history_map:
+            self.history_map[conv_id] = History(conv_id=conv_id)
+            self.history_map[conv_id].created_at = datetime.now()
+        self.history_map[conv_id].messages.append(msg)
+        self.history_map[conv_id].updated_at = datetime.now()
 
-    def get_conversation_history(self, conversation_id: str) -> List[Message]:
+    def get_history_msgs(self, conv_id: str) -> List[Message]:
         """根据对话 ID 获取对话历史。"""
-        return self.conversations.get(conversation_id, [])
+        return self.history_map.get(conv_id, History()).messages
 
-    async def save_conversation_to_file(self, conversation_id: str) -> str:
+    async def save_conversation_to_file(self, conv_id: str) -> str:
         """持久化对话到 JSON 文件。"""
-        messages = self.conversations.get(conversation_id, [])
-        if not messages:
-            return ""
-        conversation_data = {
-            "conversation_id": conversation_id,
-            "created_at": messages[0].timestamp.isoformat(),
-            "updated_at": datetime.now().isoformat(),
-            "messages": []
-        }
-        for msg in messages:
-            msg_data = {
-                "id": msg.id,
-                "role": msg.role,
-                "timestamp": msg.timestamp.isoformat()
-            }
-            if isinstance(msg.content, Content):
-                msg_data["content"] = {
-                    "type": "structured",
-                    "blocks": [
-                        {
-                            "type": block.type,
-                            "content": block.content,
-                            **({"extras": block.extras} if block.extras else {})  # 保存自定义字段
-                        }
-                        for block in msg.content.blocks
-                    ]
-                }
-            else:
-                msg_data["content"] = str(msg.content)
-            conversation_data["messages"].append(msg_data)
-        filename = f"{conversation_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        if conv_id not in self.history_map:
+            raise ValueError(f"No conversation found with ID: {conv_id}")
+        
+        # save_path
+        now_datetime_str = datetime.now().strftime('%Y%m%d-%H%M%S')
+        filename = f"{now_datetime_str}_{conv_id}.json"
         filepath = self.save_path / filename
+        
+        history = self.history_map[conv_id]
         async with aiofiles.open(filepath, 'w', encoding='utf-8') as f:
-            await f.write(json.dumps(conversation_data, indent=2, ensure_ascii=False))
+            await f.write(history.model_dump_json(indent=2, exclude_none=True))
         return str(filepath)
 
-    def cleanup_memory(self, conversation_id: str) -> None:
+    def cleanup_memory(self, conv_id: str) -> None:
         """清理内存中的对话。"""
-        if conversation_id in self.conversations:
-            del self.conversations[conversation_id]
+        if conv_id in self.history_map:
+            del self.history_map[conv_id]

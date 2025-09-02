@@ -13,7 +13,7 @@ class ConversationBuilder:
         self.graph = ConversationGraph()
     
     async def create_data_analysis_conversation(self) -> str:
-        """示例：创建一轮数据分析对话并返回 conversation_id。"""
+        """示例：创建一轮数据分析对话并返回 conv_id。"""
         print("📊 创建数据分析对话...")
         
         # 第一条消息：带结构化数据的介绍
@@ -36,7 +36,7 @@ class ConversationBuilder:
             content=intro_content,
         )
         
-        conversation_id = result1['conversation_id']
+        conv_id = result1['conv_id']
         print(f"初步分析: {result1['response']}\n")
         
         # 后续详细指标
@@ -57,16 +57,18 @@ class ConversationBuilder:
         )
         
         result2 = await self.graph.chat(
-            conversation_id=conversation_id,
-            content=metrics_content,
-            is_final=True
+            conv_id=conv_id,
+            content=metrics_content
         )
         
         print(f"最终建议: {result2['response']}")
-        return conversation_id
+        
+        # 结束对话并保存
+        await self.graph.end(conv_id, save=True)
+        return conv_id
     
     async def create_product_presentation(self) -> str:
-        """示例：创建产品演示对话并返回 conversation_id。"""
+        """示例：创建产品演示对话并返回 conv_id。"""
         print("🚀 创建产品演示...")
         presentation_content = Content(
             "新品发布演示",
@@ -95,12 +97,14 @@ class ConversationBuilder:
 
         result = await self.graph.chat(
             system_prompt="你是产品营销专家，负责撰写有吸引力的演示文案。",
-            content=presentation_content,
-            is_final=True,
+            content=presentation_content
         )
 
         print(f"产品摘要: {result['response']}")
-        return result['conversation_id']
+        
+        # 结束对话并保存
+        await self.graph.end(result['conv_id'], save=True)
+        return result['conv_id']
 
 
 async def demonstrate_custom_fields():
@@ -151,7 +155,7 @@ async def demonstrate_custom_fields():
     result = await graph.chat(content=content)
     print(f"\n对话结果: {result['response']}")
     
-    return result['conversation_id']
+    return result['conv_id']
 
 
 async def demonstrate_positioning_control():
@@ -223,7 +227,7 @@ async def batch_conversation_processing():
     
     print(f"✅ 已处理 {len(results)} 个会话，耗时 {end_time - start_time:.2f} 秒")
     for i, result in enumerate(results):
-        print(f"  会话 {i+1}: {result['conversation_id'][:8]}...")
+        print(f"  会话 {i+1}: {result['conv_id'][:8]}...")
 
 
 async def main():

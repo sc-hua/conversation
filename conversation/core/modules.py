@@ -133,7 +133,8 @@ class Content(BaseModel):
 
 class Message(BaseModel):
     """对话消息，包含角色、内容和时间戳。"""
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="消息唯一标识符")
+    message_id: str = Field(default_factory=lambda: str(uuid.uuid4()),
+                            alias="msg_id", description="消息唯一标识符")
     role: str = Field(..., description="消息角色：system|user|assistant")
     content: Union[str, Content] = Field(..., description="消息内容")
     timestamp: datetime = Field(default_factory=datetime.now, description="消息时间戳")
@@ -141,7 +142,8 @@ class Message(BaseModel):
 
 class ConversationState(BaseModel):
     """运行时的对话状态与历史。"""
-    conversation_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="对话唯一标识符")
+    conversation_id: str = Field(default_factory=lambda: str(uuid.uuid4()),
+                                 alias="conv_id", description="对话唯一标识符")
     system_prompt: Optional[str] = Field(None, description="系统提示词")
     messages: List[Message] = Field(default_factory=list, description="对话消息列表")
     current_input: Optional[Content] = Field(None, description="当前用户输入")
@@ -149,11 +151,13 @@ class ConversationState(BaseModel):
     is_complete: bool = Field(False, description="对话是否已完成")
 
 
-class ConversationHistory(BaseModel):
-    """已完成对话的持久化表示。"""
-    conversation_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="对话唯一标识符")
-    system_prompt: Optional[str] = Field(None, description="系统提示词")
-    messages: List[Message] = Field(default_factory=list, description="对话消息列表")
+class History(BaseModel):
+    """已完成对话的内存存储、文件持久化表示。"""
+    # 可以使用 alias 来简化字段访问，conv_id 和 conversation_id 是同一个字段
+    # 如果 history.model_dump_json(by_alias=True)，保存时才会保存为 conv_id
+    conversation_id: str = Field(default_factory=lambda: str(uuid.uuid4()),
+                                 alias="conv_id", description="对话唯一标识符")
     created_at: datetime = Field(default_factory=datetime.now, description="创建时间")
     updated_at: datetime = Field(default_factory=datetime.now, description="更新时间")
     metadata: Optional[Dict[str, Any]] = Field(None, description="元数据")
+    messages: List[Message] = Field(default_factory=list, description="对话消息列表")

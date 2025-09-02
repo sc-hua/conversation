@@ -9,7 +9,8 @@ import os
 from datetime import datetime
 
 from conversation.core import Content, ConversationGraph
-
+from dotenv import load_dotenv
+load_dotenv()
 
 async def test_two_round_conversation():
     """使用 ConversationGraph 测试两轮对话功能"""
@@ -36,18 +37,17 @@ async def test_two_round_conversation():
     
     # 创建第一个输入
     first_input = Content()
-    first_input.add_text("你好，请简单介绍一下你自己。")
+    first_input.add_text("你好，我是ABC。请简单介绍一下你自己。")
     
     # 发送第一轮消息
     result1 = await graph.chat(
         system_prompt=system_prompt,
-        content=first_input,
-        is_final=False
+        content=first_input
     )
     
     print(f"用户: {first_input.to_display_text()}")
     print(f"助手: {result1['response']}")
-    print(f"对话ID: {result1['conversation_id']}")
+    print(f"对话ID: {result1['conv_id']}")
     print(f"消息数量: {result1['message_count']}")
     
     # 第二轮对话（使用相同的对话ID继续）
@@ -55,36 +55,35 @@ async def test_two_round_conversation():
     
     # 创建第二个输入（包含文本和图片）
     second_input = Content()
-    second_input.add_text("我之前说了什么？")
+    second_input.add_text("我之前说了什么？我叫什么名字？")
     second_input.add_text("请告诉我今天的天气怎么样？")
+    second_input.add_text("另外，请分析一下这张图片：")
+    second_input.add_image("test_image.jpg")  # 这里会通过 utils.load_image 加载图片
     
     # 添加一个实际存在的图片
     if os.path.exists("./images/test_image.jpg"):
-        second_input.add_text("另外，请分析一下这张图片：")
-        second_input.add_image("test_image.jpg")  # 这里会通过 utils.load_image 加载图片
         print("✓ 图片文件已找到，将包含在对话中")
     else:
         second_input.add_text("（没有找到测试图片文件）")
     
-    # 发送第二轮消息（使用相同的 conversation_id）
+    # 发送第二轮消息（使用相同的 conv_id）
     result2 = await graph.chat(
-        conversation_id=result1['conversation_id'],
-        content=second_input,
-        is_final=True  # 标记为最终，会自动保存对话到文件
+        conv_id=result1['conv_id'],
+        content=second_input
     )
     
     print(f"用户: {second_input.to_display_text()}")
     print(f"助手: {result2['response']}")
-    print(f"对话ID: {result2['conversation_id']}")
+    print(f"对话ID: {result2['conv_id']}")
     print(f"消息数量: {result2['message_count']}")
     
-    print("\n=== 对话结束 ===")
-    print(f"完整对话已自动保存到文件")
-    
+    # 结束对话并保存到文件
+    await graph.end(result2['conv_id'], save=True)
+
     # 显示消息转换结果（用于调试）
     print("\n=== 调试信息：消息转换结果 ===")
     converted_messages = graph.llm.convert_messages(
-        graph.conversation_manager.get_conversation_history(result2['conversation_id']),
+        graph.conversation_manager.get_history_msgs(result2['conv_id']),
         second_input
     )
     print(f"转换后的消息格式: {converted_messages}")

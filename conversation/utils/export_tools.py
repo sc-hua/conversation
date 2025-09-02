@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-from ..core.modules import ConversationHistory, Message, Content, ContentBlock
+from ..core.modules import History, Message, Content, ContentBlock
 
 
 class MultimodalExporter:
@@ -26,7 +26,7 @@ class MultimodalExporter:
         conversations_dir = conversations_dir or os.getenv("CONVERSATIONS_DIR")
         self.conversations_dir = Path(conversations_dir)
         
-    def load_conversation(self, conversation_file: str) -> Optional[ConversationHistory]:
+    def load_conversation(self, conversation_file: str) -> Optional[History]:
         """加载对话记录文件"""
         try:
             file_path = self.conversations_dir / conversation_file
@@ -57,8 +57,8 @@ class MultimodalExporter:
                     timestamp=datetime.fromisoformat(msg_data['timestamp'])
                 ))
             
-            return ConversationHistory(
-                conversation_id=data['conversation_id'],
+            return History(
+                conv_id=data['conv_id'],
                 messages=messages,
                 created_at=datetime.fromisoformat(data['created_at']),
                 updated_at=datetime.fromisoformat(data['updated_at']),
@@ -93,7 +93,7 @@ class MultimodalExporter:
             
         return media_info
     
-    def convert_to_llamafactory_format(self, conversation: ConversationHistory) -> Dict[str, Any]:
+    def convert_to_llamafactory_format(self, conversation: History) -> Dict[str, Any]:
         """转换为 LLaMA-Factory 格式"""
         result = {
             'messages': [],
