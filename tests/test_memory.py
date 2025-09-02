@@ -149,7 +149,7 @@ async def test_memory_capability():
 
 async def main():
     """运行记忆能力测试"""
-    current_llm = os.getenv('LLM_TYPE', 'mock')
+    current_llm = os.getenv('LLM_NAME', 'mock')
     print(f"当前LLM配置: {current_llm.upper()}")
     
     if current_llm == 'ollama':

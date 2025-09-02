@@ -18,15 +18,15 @@ async def test_two_round_conversation():
     openai_key = os.getenv('OPENAI_API_KEY')
     if openai_key and openai_key != 'your_openai_api_key_here':
         # 使用 OpenAI
-        llm_type = 'openai'
+        llm_name = 'openai'
         print("使用 OpenAI 模型进行测试")
     else:
         # 使用 Mock LLM
-        llm_type = 'mock'
+        llm_name = 'mock'
         print("使用 Mock 模型进行测试（请在 .env 中配置真实的 OPENAI_API_KEY 以使用 OpenAI）")
     
     # 创建 ConversationGraph 实例
-    graph = ConversationGraph(llm_type=llm_type)
+    graph = ConversationGraph(llm=llm_name)
     
     # 设置系统提示
     system_prompt = "你是一个友好的AI助手，能够处理文本和图片内容。"

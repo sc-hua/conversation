@@ -37,7 +37,7 @@ async def test_ollama_image():
     print(f"📝 发送内容: {content.to_display_text()}")
     
     # 创建对话图，强制使用ollama
-    graph = ConversationGraph(llm_type='ollama')
+    graph = ConversationGraph(llm='ollama')
     
     try:
         # 发送请求

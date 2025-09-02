@@ -10,8 +10,8 @@ __all__ = ['BaseLLM', 'MockLLM', 'OllamaLLM', 'OpenAILLM', 'create_llm']
 
 
 def create_llm(provider: str = None, **kwargs) -> BaseLLM:
-    """创建LLM实例，默认从环境变量LLM_TYPE读取"""
-    provider = provider or os.getenv('LLM_TYPE', 'mock').lower()
+    """创建LLM实例，默认从环境变量LLM_NAME读取"""
+    provider = provider or os.getenv('LLM_NAME', 'mock').lower()
     
     if provider == "mock":
         return MockLLM(**kwargs)

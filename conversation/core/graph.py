@@ -9,7 +9,7 @@ import asyncio
 from typing import Dict, Optional, Any
 from .modules import ConversationState, Message, Content
 from .manager import ConversationManager
-from ..llm import create_llm
+from ..llm import create_llm, BaseLLM
 
 
 class ConversationGraph:
@@ -17,17 +17,17 @@ class ConversationGraph:
     LangGraph对话系统，支持结构化内容和并发控制。
     
     参数:
+        llm：语言模型类型（'mock'、'ollama'、'openai'）
         max_concurrent: 最大并发数
-        llm_type: LLM类型（'mock'、'ollama'、'openai'）
     属性:
         llm: 语言模型实例
         conversation_manager: 对话管理器
         semaphore: 并发信号量
     """
 
-    def __init__(self, max_concurrent: int = 5, llm_type: str = None):
-        # 使用create_llm工厂函数创建LLM实例
-        self.llm = create_llm(llm_type)
+    def __init__(self, llm: str | BaseLLM | None = None, 
+                 max_concurrent: int = 5):
+        self.llm = llm if isinstance(llm, BaseLLM) else create_llm(llm)
         self.conversation_manager = ConversationManager()
         self.semaphore = asyncio.Semaphore(max_concurrent)
 
