@@ -8,9 +8,11 @@ import uuid
 import os
 from datetime import datetime
 
-from conversation.core import Content, ConversationGraph
+# 首先加载环境变量，然后再导入 conversation 模块
 from dotenv import load_dotenv
 load_dotenv()
+
+from conversation.core import Content, ConversationGraph
 
 async def test_two_round_conversation():
     """使用 ConversationGraph 测试两轮对话功能"""
@@ -45,10 +47,10 @@ async def test_two_round_conversation():
         content=first_input
     )
     
-    print(f"用户: {first_input.to_display_text()}")
-    print(f"助手: {result1['response']}")
-    print(f"对话ID: {result1['conv_id']}")
-    print(f"消息数量: {result1['message_count']}")
+    # print(f"用户: {first_input.to_display_text()}")
+    # print(f"助手: {result1['response']}")
+    # print(f"对话ID: {result1['conv_id']}")
+    # print(f"消息数量: {result1['message_count']}")
     
     # 第二轮对话（使用相同的对话ID继续）
     print("\n=== 第二轮对话 ===")
@@ -72,10 +74,10 @@ async def test_two_round_conversation():
         content=second_input
     )
     
-    print(f"用户: {second_input.to_display_text()}")
-    print(f"助手: {result2['response']}")
-    print(f"对话ID: {result2['conv_id']}")
-    print(f"消息数量: {result2['message_count']}")
+    # print(f"用户: {second_input.to_display_text()}")
+    # print(f"助手: {result2['response']}")
+    # print(f"对话ID: {result2['conv_id']}")
+    # print(f"消息数量: {result2['message_count']}")
     
     # 结束对话并保存到文件
     await graph.end(result2['conv_id'], save=True)
@@ -83,10 +85,10 @@ async def test_two_round_conversation():
     # 显示消息转换结果（用于调试）
     print("\n=== 调试信息：消息转换结果 ===")
     converted_messages = graph.llm.convert_messages(
-        graph.conversation_manager.get_history_msgs(result2['conv_id']),
+        graph.history_manager.get_msgs(result2['conv_id']),
         second_input
     )
-    print(f"转换后的消息格式: {converted_messages}")
+    # print(f"转换后的消息格式: {converted_messages}")
 
 
 if __name__ == "__main__":
