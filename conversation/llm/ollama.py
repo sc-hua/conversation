@@ -13,15 +13,15 @@ class OllamaLLM(BaseLLM):
     def __init__(self, model: str = None, base_url: str = None, timeout: int = None):
         """初始化Ollama集成，model/base_url/timeout可由环境变量覆盖"""
         self.model = (
-            model if model is None else 
+            model if model is not None else 
             os.getenv('OLLAMA_MODEL', 'qwen2.5vl:3b')
         )
         self.base_url = (
-            base_url if base_url is None else 
+            base_url if base_url is not None else
             os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
         )
         self.timeout = (
-            timeout if timeout is None else
+            timeout if timeout is not None else
             int(os.getenv('OLLAMA_TIMEOUT', '30'))
         )
 

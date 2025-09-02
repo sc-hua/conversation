@@ -13,10 +13,10 @@ class OpenAILLM(BaseLLM):
     def __init__(self, model: str = None, api_key: str = None, 
                  base_url: str = None, timeout: int = None):
         """可选覆盖默认配置"""
-        self.model = model if model is None else os.getenv('OPENAI_MODEL')
-        self.api_key = api_key if api_key is None else os.getenv('OPENAI_API_KEY')
-        self.base_url = base_url if base_url is None else os.getenv('OPENAI_BASE_URL')
-        self.timeout = timeout if timeout is None else int(os.getenv('OPENAI_TIMEOUT'))            
+        self.model = model if model is not None else os.getenv('OPENAI_MODEL')
+        self.api_key = api_key if api_key is not None else os.getenv('OPENAI_API_KEY')
+        self.base_url = base_url if base_url is not None else os.getenv('OPENAI_BASE_URL')
+        self.timeout = timeout if timeout is not None else int(os.getenv('OPENAI_TIMEOUT'))            
         if not self.api_key:
             raise ValueError("需要设置OPENAI_API_KEY环境变量")
         

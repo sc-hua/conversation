@@ -25,9 +25,13 @@ class ConversationGraph:
         semaphore: 并发信号量
     """
 
-    def __init__(self, llm: str | BaseLLM | None = None, 
+    def __init__(self, 
+                 llm: str | BaseLLM | None = None, 
+                #  system_prompt: str = None,
                  max_concurrent: int = 5):
         self.llm = llm if isinstance(llm, BaseLLM) else create_llm(llm)
+        # HSC: should support system_prompt
+        # self.system_prompt = system_prompt
         self.conversation_manager = ConversationManager()
         self.semaphore = asyncio.Semaphore(max_concurrent)
 
