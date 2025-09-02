@@ -3,12 +3,12 @@
 Test script to verify Ollama integration with conversation graph.
 """
 
-import asyncio
 import os
+import asyncio
+from dotenv import load_dotenv
+load_dotenv()
 
 from conversation.core import ConversationGraph, Content
-from conversation.load_env import load_env
-load_env()
 
 
 async def test_ollama_conversation():

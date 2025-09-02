@@ -4,12 +4,12 @@ import asyncio
 from json import load
 import uuid
 from typing import Dict, List, Optional, Any
+from dotenv import load_dotenv
+load_dotenv()
 
 # 使用现有模块，避免重复定义
 from conversation.core.modules import Message, Content
 from conversation.core.manager import ConversationManager
-from conversation.load_env import load_env
-load_env()
 
 
 class MockLLM:

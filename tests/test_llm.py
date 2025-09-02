@@ -3,14 +3,14 @@
 Test LLM providers with different content types.
 """
 
-import asyncio
-import sys
 import os
+import sys
+import asyncio
+from dotenv import load_dotenv
+load_dotenv()
 
 from conversation.core.modules import Content
 from conversation.llm import OpenAILLM, OllamaLLM, MockLLM
-from conversation.load_env import load_env
-load_env()
 
 
 async def test_llm(llm_type: str):
