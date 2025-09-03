@@ -14,13 +14,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from conversation.core import ConversationGraph, Content
-from conversation.utils.image_utils import load_image
+from conversation.llm import create_llm
 
 # 全局配置
-LLM = "mock"
-# LLM = "oai"
+LLM = create_llm()
 SAVE_CONVERSATIONS = True  # 全局控制是否保存对话到文件
-os.environ['HISTORY_SAVE_PATH'] = './log/draft'  # 设置保存路径
 
 # 测试图像路径
 TEST_IMAGE_PATH = "./data/images/test_image.jpg"
