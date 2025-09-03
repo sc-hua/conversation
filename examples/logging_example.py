@@ -14,32 +14,32 @@ file_logger = get_logger("file")
 def basic_example():
     """基础使用示例"""
     print("\n=== 基础日志示例 ===")
-    logger.debug("调试信息")
-    logger.info("程序开始运行")
-    logger.warning("这是一个警告")
-    logger.error("这是一个错误")
+    logger.debug("Debug message")
+    logger.info("Program started")
+    logger.warning("This is a warning")
+    logger.error("This is an error")
 
 
 @log_exception
 def normal_function():
     """带异常处理的普通函数"""
-    logger.info("执行普通函数")
-    return "成功"
+    logger.info("Executing normal function")
+    return "Success"
 
 
 @log_exception  
 async def async_function():
     """带异常处理的异步函数"""
-    logger.info("执行异步函数")
+    logger.info("Executing async function")
     await asyncio.sleep(0.1)
-    return "异步成功"
+    return "Async success"
 
 
 def module_example():
     """多模块日志示例"""
     print("\n=== 模块日志示例 ===")
-    chat_logger.info("聊天模块：处理用户消息")
-    file_logger.info("文件模块：保存对话")
+    chat_logger.info("Chat module: Processing user message")
+    file_logger.info("File module: Saving conversation")
 
 
 async def conversation_example():
@@ -47,16 +47,16 @@ async def conversation_example():
     print("\n=== 对话系统示例 ===")
     
     conv_id = "test_123"
-    logger.info(f"对话开始 | conv_id={conv_id}")
-    
+    logger.info(f"[Conversation started] | conv_id={conv_id}")
+
     # 模拟LLM调用
     llm_logger = get_logger("llm")
-    llm_logger.info("调用OpenAI API")
-    
+    llm_logger.info("[LLM API call] | Starting OpenAI API")
+
     await asyncio.sleep(0.2)  # 模拟网络请求
-    
-    llm_logger.info("API调用成功 | tokens=150")
-    logger.info(f"对话结束 | conv_id={conv_id}")
+
+    llm_logger.info("[LLM API call] | API call successful | tokens=150")
+    logger.info(f"[Conversation ended] | conv_id={conv_id}")
 
 
 async def main():

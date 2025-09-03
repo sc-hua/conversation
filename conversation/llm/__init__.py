@@ -15,7 +15,7 @@ def create_llm(provider: str = None, **kwargs) -> BaseLLM:
     provider = provider or os.getenv('LLM_NAME', "").lower()
     if not provider:
         provider = "mock"
-        warn_once(f"未指定 LLM 提供商，使用 {provider}")
+        warn_once(f"[LLM] | no provider specified, using {provider}")
 
     if provider == "mock":
         return MockLLM(**kwargs)

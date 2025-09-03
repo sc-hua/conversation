@@ -89,7 +89,7 @@ class Logger:
             self.logger.addHandler(file_handler)
         
         if not os.getenv("LOG_DIR", ""):
-            self.warn_once(f"LOG_DIR 环境变量未设置，使用 {log_dir.absolute()}")
+            self.warn_once(f"[Logger] | LOG_DIR env var not set, using {log_dir.absolute()}")
 
     def get_logger(self, name: str = None):
         """获取子模块日志器"""
@@ -136,7 +136,7 @@ def log_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            logger.error(f"函数异常 | {func.__name__} | {str(e)}")
+            logger.error(f"[Sync function exception] | {func.__name__} | {str(e)}")
             raise
     
     @wraps(func)
@@ -145,7 +145,7 @@ def log_exception(func):
         try:
             return await func(*args, **kwargs)
         except Exception as e:
-            logger.error(f"异步函数异常 | {func.__name__} | {str(e)}")
+            logger.error(f"[Async function exception] | {func.__name__} | {str(e)}")
             raise
     
     import asyncio

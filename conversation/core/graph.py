@@ -49,7 +49,7 @@ class ConversationGraph:
         """
         # 如果是第一条消息，则添加系统提示
         if (not self.history_manager.get_msgs(state.conv_id) and state.system_prompt):
-            self.logger.debug(f"添加系统提示 | conv_id = {shortcut_id(state.conv_id)}")
+            self.logger.debug(f"[Add system_prompt] | conv_id = {shortcut_id(state.conv_id)}")
             self.history_manager.save_msg(
                 conv_id=state.conv_id,
                 msg=Message(role="system", content=state.system_prompt)
@@ -63,7 +63,7 @@ class ConversationGraph:
         参数 / 返回: state: ConversationState
         """
         if state.current_input:
-            self.logger.info(f"生成响应 | conv_id = {shortcut_id(state.conv_id)}")
+            self.logger.info(f"[Generate response] | conv_id = {shortcut_id(state.conv_id)}")
             response = await self.llm.generate_response(
                 messages=self.history_manager.get_msgs(state.conv_id), 
                 current_input=state.current_input
@@ -87,7 +87,7 @@ class ConversationGraph:
                 conv_id=state.conv_id,
                 msg=Message(role="assistant", content=state.response)
             )
-            self.logger.debug(f"保存历史 | "
+            self.logger.debug(f"[Save history] | "
                               f"conv_id = {shortcut_id(state.conv_id)} | "
                               f"messages = {self.history_manager.get_length(state.conv_id)}")
         return state
@@ -115,15 +115,14 @@ class ConversationGraph:
                 system_prompt=system_prompt,
                 current_input=content
             )
-            
-            self.logger.info(f"对话开始 | conv_id = {shortcut_id(state.conv_id)}")
-            
+
+            self.logger.info(f"[Start conversation] | conv_id = {shortcut_id(state.conv_id)}")
             # 执行对话图：处理 → 生成 → 保存
             state = await self._prepare_messages(state)
             state = await self._generate_response(state)
             state = await self._save_history(state)
-            
-            self.logger.info(f"对话完成 | "
+
+            self.logger.info(f"[End conversation] | "
                              f"conv_id = {shortcut_id(state.conv_id)} | "
                              f"messages = {self.history_manager.get_length(state.conv_id)}")
 
@@ -142,7 +141,7 @@ class ConversationGraph:
         file_path = None
         if save:
             file_path = await self.history_manager.save_conversation_to_file(conv_id)
-            self.logger.info(f"对话已保存 | file = {file_path}")
+            self.logger.info(f"[Conversation saved] | file = {file_path}")
         self.history_manager.cleanup_memory(conv_id)
-        self.logger.debug(f"清理内存 | conv_id = {shortcut_id(conv_id)}")
+        self.logger.debug(f"[Cleanup memory] | conv_id = {shortcut_id(conv_id)}")
         return file_path

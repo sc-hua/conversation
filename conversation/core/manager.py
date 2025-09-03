@@ -37,7 +37,7 @@ class HistoryManager:
                 self.save_path = Path(env_path)
             else:
                 self.save_path = Path("./log/conversations")
-                warn_once(f"未传入 save_path 或者设置 HISTORY_SAVE_PATH 环境变量，使用: {self.save_path.absolute()}")
+                warn_once(f"[HistoryManager] | no save_path or HISTORY_SAVE_PATH env var set, using: {self.save_path.absolute()}")
         self.save_path.mkdir(parents=True, exist_ok=True)
 
     def exists(self, conv_id: str) -> bool:
@@ -58,10 +58,10 @@ class HistoryManager:
         if conv_id not in self._map:
             self._map[conv_id] = History(conv_id=conv_id)
             self._map[conv_id].created_at = datetime.now()
-            self.logger.debug(f"创建新对话 | conv_id = {shortcut_id(conv_id)}")
+            self.logger.debug(f"[Create new conversation] | conv_id = {shortcut_id(conv_id)}")
         self._map[conv_id].messages.append(msg)
         self._map[conv_id].updated_at = datetime.now()
-        self.logger.debug(f"保存消息 | conv_id = {shortcut_id(conv_id)} | role = {msg.role}")
+        self.logger.debug(f"[Save message] | conv_id = {shortcut_id(conv_id)} | role = {msg.role}")
 
     @log_exception
     async def save_conversation_to_file(self, conv_id: str) -> str:
@@ -74,11 +74,11 @@ class HistoryManager:
             data = self._map[conv_id].model_dump_json(indent=2, exclude_none=True)
             await f.write(data)
 
-        self.logger.info(f"对话保存成功 | conv_id = {shortcut_id(conv_id)} | messages = {self.get_length(conv_id)}")
+        self.logger.info(f"[Conversation saved] | conv_id = {shortcut_id(conv_id)} | messages = {self.get_length(conv_id)}")
         return str(filepath)
 
     def cleanup_memory(self, conv_id: str) -> None:
         """清理内存中的对话。"""
         if conv_id in self._map:
             del self._map[conv_id]
-            self.logger.debug(f"清理内存 | conv_id = {shortcut_id(conv_id)}")
+            self.logger.debug(f"[Cleanup memory] | conv_id = {shortcut_id(conv_id)}")
