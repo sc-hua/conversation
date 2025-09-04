@@ -5,11 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "conversation"
 version = "0.1.0"
-description = "多模态对话系统"
+description = "LLM conversation manager."
 readme = "README.md"
 requires-python = ">=3.8"
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Sicheng Hua", email = "sc_hua@qq.com"}
 ]
 dependencies = [
     "pydantic>=2.0.0",
@@ -30,5 +30,6 @@ where = ["."]
 include = ["conversation*"]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/conversation"
-Repository = "https://github.com/yourusername/conversation.git"
+Homepage = "https://github.com/sc-hua/conversation"
+Repository = "https://github.com/sc-hua/conversation.git"
+git add .git add .
