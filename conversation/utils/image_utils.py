@@ -1,9 +1,12 @@
 import io
 import base64
+from pathlib import Path
 from typing import Optional
 from PIL import Image
 import requests
 import os
+
+from conversation.utils.logging import warn_once
 
 
 def resolve_image_path(image_path: str) -> str:
@@ -20,17 +23,18 @@ def resolve_image_path(image_path: str) -> str:
     if image_path.startswith(('./', '../')):
         return image_path
 
+    # FIXME: 这个逻辑可能不对，但现阶段可以这么处理
     # 如果是文件能够直接获取到，直接返回
     if os.path.exists(image_path):
         return image_path
 
-    # 其他相对路径，基于IMAGE_BASE_DIR解析
-    base_dir = os.getenv('IMAGE_BASE_DIR')
-    if base_dir:
-        return os.path.join(base_dir, image_path)
-    else:
-        return image_path
-
+    # 其他相对路径，基于 IMAGE_BASE_DIR 解析
+    base_dir = os.getenv('IMAGE_BASE_DIR', None)
+    if base_dir is None:
+        base_dir = os.getenv('IMAGE_BASE_DIR', "./data/images")
+        warn_once(f"[ImageUtils] | no IMAGE_BASE_DIR env var set, using: {Path(base_dir).absolute()}")
+    return os.path.join(base_dir, image_path)
+    
 def load_image(image_path: str, return_type: str = "base64") -> Optional[object]:
     """
     加载本地图片或URL图片，返回 PIL.Image 或 base64 字符串。
@@ -41,7 +45,7 @@ def load_image(image_path: str, return_type: str = "base64") -> Optional[object]
     返回: 
         PIL.Image 或 base64 字符串，失败返回 None。
     """
-    # HSC: resolve base64 input
+    # TODO: 处理 base64 的输入
     # 解析图片路径
     resolved_path = resolve_image_path(image_path)
     

@@ -14,7 +14,7 @@ def get_relative_path(pathname):
     """获取相对于项目根目录的相对路径"""
     try:
         # 获取项目根目录（conversation 包的上级目录）
-        current_dir = Path(__file__).parent.parent.parent  # logging.py -> utils -> conversation -> project_root
+        current_dir = Path(__file__).parent.parent
         relative_path = Path(pathname).relative_to(current_dir)
         return str(relative_path)
     except ValueError:
@@ -89,7 +89,7 @@ class Logger:
             ))
             self.logger.addHandler(console)
         
-        if not os.getenv("LOG_DIR", ""):
+        if os.getenv("LOG_DIR", None) is None:
             self.warn_once(f"[Logger] | LOG_DIR env var not set, using {log_dir.absolute()}")
 
     def get_logger(self, name: str = None):

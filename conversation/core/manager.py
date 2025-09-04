@@ -16,29 +16,25 @@ class HistoryManager:
     支持内存存储和文件持久化的混合模式。
     
     参数:
-        save_path: 保存目录
+        save_dir: 保存目录
     属性:
         _map: 内存对话存储 (Dict[str, History])
-        save_path: 文件保存目录 (Path)
+        save_dir: 文件保存目录 (Path)
         logger: 日志记录器
     """
 
-    def __init__(self, save_path: str = None):
+    def __init__(self, save_dir: str = None):
+        self.logger = get_logger("manager")
         self._map: Dict[str, History] = {}
         
-        self.save_path = save_path
-        self._resolve_save_path()
-        self.logger = get_logger("manager")
+        self.save_dir = save_dir or os.getenv("HISTORY_SAVE_DIR", "./log/conv_log/draft")
+        self._resolve_save_dir()
     
-    def _resolve_save_path(self):
-        if self.save_path is None:
-            env_path = os.getenv("HISTORY_SAVE_PATH", "")
-            if env_path:
-                self.save_path = Path(env_path)
-            else:
-                self.save_path = Path("./log/conversations")
-                warn_once(f"[HistoryManager] | no save_path or HISTORY_SAVE_PATH env var set, using: {self.save_path.absolute()}")
-        self.save_path.mkdir(parents=True, exist_ok=True)
+    def _resolve_save_dir(self):
+        self.save_dir = Path(self.save_dir)
+        self.save_dir.mkdir(parents=True, exist_ok=True)
+        if os.getenv("HISTORY_SAVE_DIR", None) is None:
+            warn_once(f"[HistoryManager] | no save_dir or HISTORY_SAVE_DIR env var set, using: {self.save_dir.absolute()}")
 
     def exists(self, conv_id: str) -> bool:
         return conv_id in self._map
@@ -77,7 +73,7 @@ class HistoryManager:
         if not self.exists(conv_id):
             raise ValueError(f"No conversation found with ID: {conv_id}")
         
-        filepath = self.save_path / f"{conv_id}.json"
+        filepath = self.save_dir / f"{conv_id}.json"
         async with aiofiles.open(filepath, 'w', encoding='utf-8') as f:
             data = self._map[conv_id].model_dump_json(indent=2, exclude_none=True)
             await f.write(data)

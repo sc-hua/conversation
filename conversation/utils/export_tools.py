@@ -23,7 +23,7 @@ class MultimodalExporter:
         Args:
             conversations_dir: 对话记录目录
         """
-        conversations_dir = conversations_dir or os.getenv("HISTORY_SAVE_PATH")
+        conversations_dir = conversations_dir or os.getenv("HISTORY_SAVE_DIR")
         self.conversations_dir = Path(conversations_dir)
         
     def load_conversation(self, conversation_file: str) -> Optional[History]:

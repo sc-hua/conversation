@@ -12,9 +12,8 @@ __all__ = ['BaseLLM', 'MockLLM', 'OllamaLLM', 'OpenAILLM', 'create_llm']
 
 def create_llm(provider: str = None, **kwargs) -> BaseLLM:
     """创建LLM实例，默认从环境变量LLM_NAME读取"""
-    provider = provider or os.getenv('LLM_NAME', "").lower()
-    if not provider:
-        provider = "mock"
+    provider = provider or os.getenv('LLM_NAME', 'mock').lower()
+    if os.getenv('LLM_NAME', None) is None:
         warn_once(f"[LLM] | no provider specified, using {provider}")
 
     if provider == "mock":

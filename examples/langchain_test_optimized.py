@@ -72,7 +72,8 @@ class ChatManager:
         self.parser = PydanticOutputParser(pydantic_object=AnalysisResponse) if use_structured else None
         
         # 保存目录
-        self.save_dir = Path("data/conv_logs/langchain")
+        save_dir = os.getenv("HISTORY_SAVE_DIR", "./log/conv_log/draft")
+        self.save_dir = Path(save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
     
     def _encode_image(self, image_path: str) -> str:
