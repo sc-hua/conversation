@@ -44,13 +44,21 @@ class HistoryManager:
         return conv_id in self._map
     
     def get_msgs(self, conv_id: str) -> List[Message]:
-        return self._map.get(conv_id, History()).messages
+        if self.exists(conv_id):
+            return self._map[conv_id].messages
+        return []
 
     def get_length(self, conv_id: str) -> int:
         """获取对话的消息数量。如果对话不存在，返回 -1 """
         if self.exists(conv_id):
             return len(self.get_msgs(conv_id))
         return -1
+
+    def to_json(self, conv_id: str) -> str:
+        """将对话转换为 JSON 字符串。如果对话不存在，返回空字符串。"""
+        if self.exists(conv_id):
+            return self._map[conv_id].model_dump_json(indent=2, exclude_none=True)
+        return ""
 
     @log_exception
     def save_msg(self, conv_id: str, msg: Message) -> None:

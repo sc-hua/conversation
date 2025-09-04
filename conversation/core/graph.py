@@ -97,7 +97,8 @@ class ConversationGraph:
         self,
         conv_id: Optional[str] = None,
         system_prompt: Optional[str] = None,
-        content: Optional[Content] = None
+        content: Optional[Content] = None,
+        return_history: bool = False,
     ) -> Dict[str, Any]:
         """
         主聊天接口，支持结构化内容。
@@ -126,15 +127,15 @@ class ConversationGraph:
                              f"conv_id = {shortcut_id(state.conv_id)} | "
                              f"messages = {self.history_manager.get_length(state.conv_id)}")
 
-            return {
+            result = {
                 "conv_id": state.conv_id,
                 "response": state.response,
                 "message_count": self.history_manager.get_length(state.conv_id),
-                "input_preview": (
-                    state.current_input.to_display_text() 
-                    if state.current_input else None
-                )
             }
+
+            if return_history:
+                result["history"] = self.history_manager.to_json(state.conv_id)
+            return result
 
     async def end(self, conv_id: str, save: bool) -> str:
         """保存对话到文件并清理内存。"""

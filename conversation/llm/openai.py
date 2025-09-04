@@ -132,16 +132,9 @@ class OpenAILLM(BaseLLM):
                               current_input: Content) -> str:
         """调用OpenAI接口返回文本响应（异步）"""
         openai_messages = self.convert_messages(messages, current_input)
+        response = await self.client.chat.completions.create(
+            model=self.model,
+            messages=openai_messages,
+        )
         
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=openai_messages,
-                max_tokens=4000,
-                temperature=0.7
-            )
-            
-            return response.choices[0].message.content
-            
-        except Exception as e:
-            return f"OpenAI API调用错误: {str(e)}"
+        return response.choices[0].message.content

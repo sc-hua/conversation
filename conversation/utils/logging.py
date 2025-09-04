@@ -7,7 +7,6 @@ import sys
 import logging
 import logging.handlers
 from pathlib import Path
-from typing import Optional
 from functools import wraps
 
 
@@ -31,6 +30,7 @@ class ColoredFormatter(logging.Formatter):
     }
     
     def format(self, record):
+        # 为控制台添加颜色
         if record.levelname in self.COLORS:
             record.levelname = f"{self.COLORS[record.levelname]}{record.levelname}{self.COLORS['ENDC']}"
         # 添加相对路径字段
@@ -70,23 +70,24 @@ class Logger:
         self.logger.setLevel(getattr(logging, log_level, logging.INFO))
         
         if not self.logger.handlers:
-            # 控制台输出
-            console = logging.StreamHandler(sys.stdout)
-            console.setFormatter(ColoredFormatter(
-                '%(asctime)s | %(levelname)-8s | %(filename)s:%(lineno)d | %(message)s',
-                datefmt='%H:%M:%S'
-            ))
-            self.logger.addHandler(console)
-            
-            # 文件输出
+            # 如果先处理 ColoredFormatter 的话，文件的输出会被染色，影响阅读，如 [31mERROR[0m
+            # 文件输出（先处理，获得原始levelname）
             file_handler = logging.handlers.RotatingFileHandler(
                 log_path, maxBytes=5*1024*1024, backupCount=3, encoding='utf-8'
             )
             file_handler.setFormatter(RelativePathFormatter(
-                '%(asctime)s | %(levelname)-8s | %(relative_path)s:%(lineno)d | %(message)s',
+                '%(asctime)s | %(levelname)s | %(relative_path)s:%(lineno)d | %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S'
             ))
             self.logger.addHandler(file_handler)
+            
+            # 控制台输出（后处理，添加颜色）
+            console = logging.StreamHandler(sys.stdout)
+            console.setFormatter(ColoredFormatter(
+                '%(asctime)s | %(levelname)s | %(filename)s:%(lineno)d | %(message)s',
+                datefmt='%H:%M:%S'
+            ))
+            self.logger.addHandler(console)
         
         if not os.getenv("LOG_DIR", ""):
             self.warn_once(f"[Logger] | LOG_DIR env var not set, using {log_dir.absolute()}")
