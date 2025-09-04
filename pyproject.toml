@@ -32,4 +32,3 @@ include = ["conversation*"]
 [project.urls]
 Homepage = "https://github.com/sc-hua/conversation"
 Repository = "https://github.com/sc-hua/conversation.git"
-git add .git add .

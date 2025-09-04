@@ -3,6 +3,11 @@
 *log/
 export/
 test/
+
+# Add for Python projects
+# Distribution / packaging
+build/
+dist/
 *.egg-info/
 
 # Byte-compiled / optimized / DLL files
