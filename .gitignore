@@ -3,6 +3,7 @@
 *log/
 export/
 test/
+.claude/
 
 # Add for Python projects
 # Distribution / packaging
