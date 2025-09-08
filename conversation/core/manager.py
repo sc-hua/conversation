@@ -16,25 +16,25 @@ class HistoryManager:
     支持内存存储和文件持久化的混合模式。
     
     参数:
-        save_dir: 保存目录
+        history_save_dir: 保存目录
     属性:
         _map: 内存对话存储 (Dict[str, History])
-        save_dir: 文件保存目录 (Path)
+        history_save_dir: 文件保存目录 (Path)
         logger: 日志记录器
     """
 
-    def __init__(self, save_dir: str = None):
+    def __init__(self, history_save_dir: str = None):
         self.logger = get_logger("manager")
         self._map: Dict[str, History] = {}
         
-        self.save_dir = save_dir or os.getenv("HISTORY_SAVE_DIR", "./log/conv_log/draft")
-        self._resolve_save_dir()
+        self.history_save_dir = history_save_dir or os.getenv("HISTORY_SAVE_DIR", "./log/conv_log/draft")
+        self._resolve_history_save_dir()
     
-    def _resolve_save_dir(self):
-        self.save_dir = Path(self.save_dir)
-        self.save_dir.mkdir(parents=True, exist_ok=True)
+    def _resolve_history_save_dir(self):
+        self.history_save_dir = Path(self.history_save_dir)
+        self.history_save_dir.mkdir(parents=True, exist_ok=True)
         if os.getenv("HISTORY_SAVE_DIR", None) is None:
-            warn_once(f"[HistoryManager] | no save_dir or HISTORY_SAVE_DIR env var set, using: {self.save_dir.absolute()}")
+            warn_once(f"[HistoryManager] | no HISTORY_SAVE_DIR env var set, using: {self.history_save_dir.absolute()}")
 
     def exists(self, conv_id: str) -> bool:
         return conv_id in self._map
@@ -73,7 +73,7 @@ class HistoryManager:
         if not self.exists(conv_id):
             raise ValueError(f"No conversation found with ID: {conv_id}")
         
-        filepath = self.save_dir / f"{conv_id}.json"
+        filepath = self.history_save_dir / f"{conv_id}.json"
         async with aiofiles.open(filepath, 'w', encoding='utf-8') as f:
             data = self._map[conv_id].model_dump_json(indent=2, exclude_none=True)
             await f.write(data)

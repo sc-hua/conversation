@@ -21,6 +21,7 @@ class ConversationGraph:
     参数:
         llm：语言模型类型（'mock'、'ollama'、'openai'）
         max_concurrent: 最大并发数
+        history_save_dir: 对话历史保存目录
     属性:
         llm: 语言模型实例
         history_manager: 对话管理器
@@ -29,11 +30,12 @@ class ConversationGraph:
 
     def __init__(
         self, 
-        llm: str | BaseLLM | None = None, 
-        max_concurrent: int = 5
+        llm: str | BaseLLM | None = None,
+        max_concurrent: int = 5,
+        history_save_dir: str = None,
     ):
         self.llm = llm if isinstance(llm, BaseLLM) else create_llm(llm)
-        self.history_manager = HistoryManager()
+        self.history_manager = HistoryManager(history_save_dir=history_save_dir)
         self.semaphore = asyncio.Semaphore(max_concurrent)
         self.logger = get_logger("graph")
 

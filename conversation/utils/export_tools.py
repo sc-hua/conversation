@@ -23,7 +23,8 @@ class MultimodalExporter:
         Args:
             conversations_dir: 对话记录目录
         """
-        conversations_dir = conversations_dir or os.getenv("HISTORY_SAVE_DIR")
+        if conversations_dir is None:
+            conversations_dir = os.getenv("HISTORY_SAVE_DIR", "./log/conv_log/draft")
         self.conversations_dir = Path(conversations_dir)
         
     def load_conversation(self, conversation_file: str) -> Optional[History]:
@@ -43,15 +44,14 @@ class MultimodalExporter:
                         content.blocks.append(ContentBlock(
                             type=block['type'],
                             content=block['content'],
-                            position=block['position']
+                            extras=block.get('extras', {})
                         ))
-                    content._sort_blocks()
                 else:
                     # 简单文本内容
                     content = msg_data['content']
                 
                 messages.append(Message(
-                    id=msg_data['id'],
+                    msg_id=msg_data['msg_id'],
                     role=msg_data['role'],
                     content=content,
                     timestamp=datetime.fromisoformat(msg_data['timestamp'])
@@ -80,7 +80,9 @@ class MultimodalExporter:
         
         if content_block.type == 'image':
             media_info['placeholder'] = '<image>'
-            media_info['file_path'] = content_block.content
+            # 优先使用 resolved_path，如果没有则使用原始 content
+            resolved_path = content_block.get_extra('resolved_path')
+            media_info['file_path'] = resolved_path if resolved_path else content_block.content
             media_info['media_type'] = 'image'
         elif content_block.type == 'audio':
             media_info['placeholder'] = '<audio>'
@@ -121,13 +123,14 @@ class MultimodalExporter:
                         media_info = self.extract_media_content(block)
                         content_parts.append(media_info['placeholder'])
                         
-                        # 收集媒体文件
+                        # 收集媒体文件，使用实际的文件路径
+                        file_path = media_info['file_path']
                         if block.type == 'image':
-                            current_media_files['images'].append(block.content)
+                            current_media_files['images'].append(file_path)
                         elif block.type == 'audio':
-                            current_media_files['audios'].append(block.content)
+                            current_media_files['audios'].append(file_path)
                         elif block.type == 'video':
-                            current_media_files['videos'].append(block.content)
+                            current_media_files['videos'].append(file_path)
                     elif block.type == 'json':
                         # JSON数据转为文本描述
                         json_text = f"数据: {json.dumps(block.content, ensure_ascii=False)}"
@@ -166,13 +169,26 @@ class MultimodalExporter:
             
         return result
     
-    def export_conversation(self, conversation_file: str, output_file: str = None) -> bool:
-        """导出单个对话为 LLaMA-Factory 格式"""
+    def export_conversation(self, conversation_file: str, output_file: str = None, output_dir: str = None) -> bool:
+        """导出单个对话为 LLaMA-Factory 格式
+        
+        Args:
+            conversation_file: 对话文件名
+            output_file: 输出文件名，如果未指定则自动生成
+            output_dir: 输出目录，如果未指定则使用对话目录
+        """
         conversation = self.load_conversation(conversation_file)
         if not conversation:
             return False
         
         llamafactory_data = self.convert_to_llamafactory_format(conversation)
+        
+        # 确定输出目录
+        if output_dir:
+            output_directory = Path(output_dir)
+            output_directory.mkdir(parents=True, exist_ok=True)
+        else:
+            output_directory = self.conversations_dir
         
         # 确定输出文件名
         if not output_file:
@@ -180,7 +196,7 @@ class MultimodalExporter:
             output_file = f"{base_name}_llamafactory.json"
         
         try:
-            output_path = self.conversations_dir / output_file
+            output_path = output_directory / output_file
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump([llamafactory_data], f, ensure_ascii=False, indent=2)
             
@@ -191,8 +207,13 @@ class MultimodalExporter:
             print(f"❌ 导出失败: {e}")
             return False
     
-    def export_all_conversations(self, output_file: str = "exported_conversations.json") -> bool:
-        """导出所有对话为单个 LLaMA-Factory 格式文件"""
+    def export_all_conversations(self, output_file: str = "exported_conversations.json", output_dir: str = None) -> bool:
+        """导出所有对话为单个 LLaMA-Factory 格式文件
+        
+        Args:
+            output_file: 输出文件名
+            output_dir: 输出目录，如果未指定则使用对话目录
+        """
         all_conversations = []
         
         # 遍历所有对话文件
@@ -210,8 +231,15 @@ class MultimodalExporter:
             print("❌ 没有找到可导出的对话记录")
             return False
         
+        # 确定输出目录
+        if output_dir:
+            output_directory = Path(output_dir)
+            output_directory.mkdir(parents=True, exist_ok=True)
+        else:
+            output_directory = self.conversations_dir
+        
         try:
-            output_path = self.conversations_dir / output_file
+            output_path = output_directory / output_file
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(all_conversations, f, ensure_ascii=False, indent=2)
             
@@ -230,24 +258,103 @@ class MultimodalExporter:
             if not file_path.name.endswith("_llamafactory.json"):
                 conversations.append(file_path.name)
         return sorted(conversations)
+    
+    def preview_conversation(self, conversation_file: str) -> None:
+        """预览对话转换结果"""
+        conversation = self.load_conversation(conversation_file)
+        if not conversation:
+            return
+        
+        print(f"📄 对话预览: {conversation_file}")
+        print(f"🆔 对话ID: {conversation.conv_id}")
+        print(f"📅 创建时间: {conversation.created_at}")
+        print(f"💬 消息数量: {len(conversation.messages)}")
+        print()
+        
+        # 显示消息概览
+        for i, message in enumerate(conversation.messages, 1):
+            content_preview = ""
+            if isinstance(message.content, Content):
+                parts = []
+                for block in message.content.blocks:
+                    if block.type == 'text':
+                        text = str(block.content)[:50]
+                        if len(str(block.content)) > 50:
+                            text += "..."
+                        parts.append(text)
+                    elif block.type == 'image':
+                        parts.append(f"[图片: {block.content}]")
+                    elif block.type == 'json':
+                        parts.append(f"[JSON数据]")
+                content_preview = " ".join(parts)
+            else:
+                content_preview = str(message.content)[:100]
+                if len(str(message.content)) > 100:
+                    content_preview += "..."
+            
+            print(f"{i}. {message.role}: {content_preview}")
+        
+        print()
+        
+        # 显示转换后的格式
+        llamafactory_data = self.convert_to_llamafactory_format(conversation)
+        print("🔄 LLaMA-Factory 格式预览:")
+        print(f"  消息数量: {len(llamafactory_data['messages'])}")
+        if 'images' in llamafactory_data:
+            print(f"  图片文件: {len(llamafactory_data['images'])} 个")
+            for img in llamafactory_data['images']:
+                print(f"    - {img}")
+        if 'audios' in llamafactory_data:
+            print(f"  音频文件: {len(llamafactory_data['audios'])} 个")
+        if 'videos' in llamafactory_data:
+            print(f"  视频文件: {len(llamafactory_data['videos'])} 个")
+        print()
 
 
 def main():
     """命令行工具主函数"""
-    import sys
+    import argparse
     
-    exporter = MultimodalExporter()
+    parser = argparse.ArgumentParser(
+        description="📚 多模态对话导出工具",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例用法:
+  python export_tools.py list
+  python export_tools.py preview conv.json
+  python export_tools.py export conv.json --output_file output.json --output_dir ./exports
+  python export_tools.py export-all --output_file all_convs.json --output_dir ./exports
+        """
+    )
     
-    if len(sys.argv) < 2:
-        print("📚 多模态对话导出工具")
-        print("=" * 40)
-        print("用法:")
-        print("  python export_tools.py list                    # 列出所有对话")
-        print("  python export_tools.py export <file>           # 导出单个对话")
-        print("  python export_tools.py export-all              # 导出所有对话")
+    subparsers = parser.add_subparsers(dest='command', help='可用命令')
+    
+    # list 命令
+    list_parser = subparsers.add_parser('list', help='列出所有对话文件')
+    
+    # preview 命令
+    preview_parser = subparsers.add_parser('preview', help='预览对话转换结果')
+    preview_parser.add_argument('file', help='对话文件名')
+    
+    # export 命令
+    export_parser = subparsers.add_parser('export', help='导出单个对话')
+    export_parser.add_argument('file', help='对话文件名')
+    export_parser.add_argument('--output_file', help='输出文件名（可选，默认自动生成）')
+    export_parser.add_argument('--output_dir', help='输出目录（可选，默认为对话目录）')
+    
+    # export-all 命令
+    export_all_parser = subparsers.add_parser('export-all', help='导出所有对话')
+    export_all_parser.add_argument('--output_file', default='exported_conversations.json', help='输出文件名（默认: exported_conversations.json）')
+    export_all_parser.add_argument('--output_dir', help='输出目录（可选，默认为对话目录）')
+    
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
         print()
         
         # 显示可用对话
+        exporter = MultimodalExporter()
         conversations = exporter.list_conversations()
         if conversations:
             print(f"📄 可用对话文件 ({len(conversations)} 个):")
@@ -259,25 +366,22 @@ def main():
             print("❌ 没有找到对话文件")
         return
     
-    command = sys.argv[1]
+    exporter = MultimodalExporter()
     
-    if command == "list":
+    if args.command == "list":
         conversations = exporter.list_conversations()
         print(f"📄 对话文件列表 ({len(conversations)} 个):")
         for conv in conversations:
             print(f"  - {conv}")
             
-    elif command == "export" and len(sys.argv) >= 3:
-        file_name = sys.argv[2]
-        output_file = sys.argv[3] if len(sys.argv) >= 4 else None
-        exporter.export_conversation(file_name, output_file)
+    elif args.command == "preview":
+        exporter.preview_conversation(args.file)
         
-    elif command == "export-all":
-        output_file = sys.argv[2] if len(sys.argv) >= 3 else "exported_conversations.json"
-        exporter.export_all_conversations(output_file)
+    elif args.command == "export":
+        exporter.export_conversation(args.file, args.output_file, args.output_dir)
         
-    else:
-        print("❌ 无效的命令")
+    elif args.command == "export-all":
+        exporter.export_all_conversations(args.output_file, args.output_dir)
 
 
 if __name__ == "__main__":

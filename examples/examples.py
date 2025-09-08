@@ -8,7 +8,7 @@ load_dotenv()
 
 # 然后导入conversation模块
 from conversation.core import ConversationGraph, Content
-from conversation.utils import get_logger
+from conversation.utils.logging import get_logger
 logger = get_logger(__name__)
 
 
@@ -153,6 +153,7 @@ async def demonstrate_positioning_control():
     content1 = Content()
     content1.add_text("开始").add_image("test_image.jpg").add_json({"test": 1})
     result1 = await graph.chat(content=content1)
+    # FIXME: no input_preview key in result now
     print(f"顺序添加: {result1['input_preview'][:50]}...")
     
     # 测试2: 工厂方法构造
