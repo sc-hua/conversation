@@ -1,8 +1,11 @@
 """LLM抽象基类定义"""
 
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List, Dict, Optional, Type, TYPE_CHECKING
 from ..core.modules import Message, Content
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
 
 
 class BaseLLM(ABC):
@@ -14,6 +17,11 @@ class BaseLLM(ABC):
         pass
     
     @abstractmethod
-    async def generate_response(self, messages: List[Message], current_input: Content) -> str:
-        """生成回复文本"""
+    async def generate_response(
+        self, 
+        messages: List[Message], 
+        current_input: Content,
+        response_format: Optional[Type["BaseModel"]] = None
+    ) -> str:
+        """生成回复文本，支持结构化输出格式"""
         pass

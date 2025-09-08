@@ -2,10 +2,13 @@
 
 import json
 import os
-from typing import List, Dict
+from typing import List, Dict, Optional, Type, TYPE_CHECKING
 from .base import BaseLLM
 from ..core.modules import Message, Content
 from ..utils.image_utils import load_image
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
 
 
 class OllamaLLM(BaseLLM):
@@ -70,9 +73,14 @@ class OllamaLLM(BaseLLM):
         
         return ollama_messages
     
-    async def generate_response(self, messages: List[Message], 
-                              current_input: Content) -> str:
-        """调用Ollama接口返回文本响应（异步），支持图片输入"""
+    async def generate_response(
+        self, 
+        messages: List[Message], 
+        current_input: Content,
+        response_format: Optional[Type["BaseModel"]] = None
+    ) -> str:
+        """调用Ollama接口返回文本响应（异步），支持图片输入
+        注意：Ollama暂不支持结构化输出，response_format参数将被忽略"""
         import aiohttp
         
         # 检查当前输入是否包含图片
@@ -106,6 +114,10 @@ class OllamaLLM(BaseLLM):
                         user_text.append(f"[JSON数据: {json.dumps(blk.content, ensure_ascii=False)}]")
                 prompt_parts.append(f"user: {' '.join(user_text)}")
             
+            # 如果指定了response_format，在prompt中添加格式要求（临时方案）
+            if response_format is not None:
+                prompt_parts.append(f"请以JSON格式返回，遵循{response_format.__name__}模型的结构。")
+            
             payload = {
                 "model": self.model,
                 "prompt": "\n".join(prompt_parts),
@@ -126,6 +138,12 @@ class OllamaLLM(BaseLLM):
         else:
             # 没有图片，使用原来的/api/chat端点
             ollama_messages = self.convert_messages(messages, current_input)
+            
+            # 如果指定了response_format，在最后一条消息中添加格式要求
+            if response_format is not None and ollama_messages:
+                last_message = ollama_messages[-1]
+                if last_message.get("role") == "user":
+                    last_message["content"] += f"\n\n请以JSON格式返回，遵循{response_format.__name__}模型的结构。"
             
             payload = {
                 "model": self.model,

@@ -1,9 +1,12 @@
 """Mock LLM实现，用于测试"""
 
 import asyncio
-from typing import List, Dict
+from typing import List, Dict, Optional, Type, TYPE_CHECKING
 from .base import BaseLLM
 from ..core.modules import Message, Content
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
 
 
 class MockLLM(BaseLLM):
@@ -39,10 +42,18 @@ class MockLLM(BaseLLM):
         
         return mock_messages
     
-    async def generate_response(self, messages: List[Message], 
-                              current_input: Content) -> str:
+    async def generate_response(
+        self, 
+        messages: List[Message], 
+        current_input: Content,
+        response_format: Optional[Type["BaseModel"]] = None
+    ) -> str:
         """基于结构化输入生成模拟回复（用于测试，无外部依赖）"""
         await asyncio.sleep(0.1)  # 模拟API延迟
+        
+        # 如果指定了response_format，模拟JSON输出
+        if response_format is not None:
+            return '{"mock": "这是模拟的结构化JSON输出", "format": "' + response_format.__name__ + '"}'
         
         responses = ["我按指定顺序分析了您的内容："]
         

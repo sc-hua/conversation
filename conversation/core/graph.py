@@ -6,12 +6,15 @@
 """
 
 import asyncio
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, Type, TYPE_CHECKING
 from .modules import ConversationState, Message, Content
 from .manager import HistoryManager
 from ..llm import create_llm, BaseLLM
 from ..utils.logging import get_logger, log_exception, warn_once
 from ..utils.id_utils import shortcut_id, new_id
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
 
 
 class ConversationGraph:
@@ -68,7 +71,8 @@ class ConversationGraph:
             self.logger.info(f"[Generate response] | conv_id = {shortcut_id(state.conv_id)}")
             response = await self.llm.generate_response(
                 messages=self.history_manager.get_msgs(state.conv_id), 
-                current_input=state.current_input
+                current_input=state.current_input,
+                response_format=state.response_format
             )
             state.response = response
         return state
@@ -101,22 +105,27 @@ class ConversationGraph:
         system_prompt: Optional[str] = None,
         content: Optional[Content] = None,
         return_history: bool = False,
+        response_format: Optional[Type["BaseModel"]] = None,
     ) -> Dict[str, Any]:
         """
-        主聊天接口，支持结构化内容。
+        主聊天接口，支持结构化内容和结构化输出。
         参数:
             conv_id: 对话ID
             system_prompt: 系统提示
             content: 结构化输入
+            return_history: 是否返回历史记录
+            response_format: Pydantic BaseModel类，用于限制输出格式
         返回: dict
         """
         # # HSC: will remove
         # assert conv_id, "必须提供 conv_id"
         async with self.semaphore:  # 控制并发
+
             state = ConversationState(
                 conv_id=conv_id or ConversationState().conv_id,
                 system_prompt=system_prompt,
-                current_input=content
+                current_input=content,
+                response_format=response_format
             )
 
             self.logger.info(f"[Start conversation] | conv_id = {shortcut_id(state.conv_id)}")
@@ -137,6 +146,7 @@ class ConversationGraph:
 
             if return_history:
                 result["history"] = self.history_manager.to_json(state.conv_id)
+            
             return result
 
     async def end(self, conv_id: str, save: bool) -> str:

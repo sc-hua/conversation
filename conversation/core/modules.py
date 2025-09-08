@@ -155,6 +155,7 @@ class ConversationState(BaseModel):
     current_input: Optional[Content] = Field(None, description="当前用户输入")
     response: Optional[str] = Field(None, description="助手回复")
     is_complete: bool = Field(False, description="对话是否已完成")
+    response_format: Optional[Any] = Field(None, description="期望的回复格式，Pydantic BaseModel类")
 
 
 class History(BaseModel):

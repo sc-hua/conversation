@@ -2,10 +2,13 @@
 
 import json
 import os
-from typing import List, Dict
+from typing import List, Dict, Optional, Type, TYPE_CHECKING
 from .base import BaseLLM
 from ..core.modules import Message, Content
 from ..utils.image_utils import load_image
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
 
 
 class OpenAILLM(BaseLLM):
@@ -128,13 +131,30 @@ class OpenAILLM(BaseLLM):
         return openai_messages
     
     
-    async def generate_response(self, messages: List[Message], 
-                              current_input: Content) -> str:
-        """调用OpenAI接口返回文本响应（异步）"""
+    async def generate_response(
+        self, 
+        messages: List[Message], 
+        current_input: Content,
+        response_format: Optional[Type["BaseModel"]] = None
+    ) -> str:
+        """调用OpenAI接口返回文本响应（异步），支持结构化输出"""
         openai_messages = self.convert_messages(messages, current_input)
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=openai_messages,
-        )
         
+        # 构建请求参数
+        request_params = {
+            "model": self.model,
+            "messages": openai_messages,
+        }
+        
+        # 如果提供了response_format，添加结构化输出配置
+        if response_format is not None:
+            request_params["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "response",
+                    "schema": response_format.model_json_schema(),
+                },
+            }
+        
+        response = await self.client.chat.completions.create(**request_params)
         return response.choices[0].message.content
